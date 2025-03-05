@@ -24,7 +24,7 @@ export class GameEngine {
     const wsProtocol = window.location.protocol === "https:" ? "wss:" : "ws:";
     const wsHost = window.location.host;
     const wsUrl = `${wsProtocol}//${wsHost}/game-ws`;
-    
+
     // Set up movement tracking
     this.setupMovementHandling();
 
@@ -110,21 +110,21 @@ export class GameEngine {
       jumping: false,
       direction: 0 // Rotation in radians
     };
-    
+
     // Listen for movement events
     this.on("move", ({ direction, active }) => {
       movementState[direction] = active;
-      
+
       // Send movement updates to server
       this.sendMovementUpdate(movementState);
     });
-    
+
     // Listen for jump events
     this.on("jump", (active) => {
       movementState.jumping = active;
       this.sendEvent({ type: 'jump', active });
     });
-    
+
     // Set up continuous movement updates
     setInterval(() => {
       if (movementState.forward || movementState.backward || 
@@ -133,13 +133,13 @@ export class GameEngine {
       }
     }, 50); // Send updates every 50ms when moving
   }
-  
+
   private sendMovementUpdate(movementState) {
     // Calculate direction and movement
     let x = 0;
     let y = 0;
     let rotation = 0;
-    
+
     if (movementState.forward) y -= 1;
     if (movementState.backward) y += 1;
     if (movementState.left) {
@@ -150,14 +150,14 @@ export class GameEngine {
       x += 1;
       rotation += 0.05;
     }
-    
+
     // Normalize diagonal movement
     if (x !== 0 && y !== 0) {
       const magnitude = Math.sqrt(x*x + y*y);
       x /= magnitude;
       y /= magnitude;
     }
-    
+
     // Send the movement event
     if (x !== 0 || y !== 0 || rotation !== 0) {
       this.sendEvent({ type: 'move', x, y, rotation });
@@ -186,13 +186,13 @@ export class GameEngine {
     try {
       this.physics.update(this.state);
       this.renderer.render(this.state);
-      
+
       // Dispatch player stats for UI
       if (this.playerId && this.state.players) {
         const players = Array.isArray(this.state.players) 
           ? this.state.players 
           : Array.from(this.state.players.values());
-        
+
         const currentPlayer = players.find(p => p.id === this.playerId);
         if (currentPlayer) {
           window.dispatchEvent(new CustomEvent('playerStatsUpdated', {
@@ -238,5 +238,3 @@ export class GameEngine {
     this.renderer.dispose();
   }
 }
-
-// Export is already done at the class declaration
