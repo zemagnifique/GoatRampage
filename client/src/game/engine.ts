@@ -1,12 +1,12 @@
 import { type GameState, type GameEvent } from "@shared/schema";
 import { PhysicsEngine } from "./physics";
-import { GameRenderer } from "./renderer";
+import { Renderer } from "./renderer";
 
 export class GameEngine {
   private socket: WebSocket;
   private state: GameState | null = null;
   private physics: PhysicsEngine;
-  private renderer: GameRenderer;
+  private renderer: Renderer;
   private playerId: string | null = null;
   private connectionReady: boolean = false;
   private connectionAttempts: number = 0;
@@ -16,7 +16,7 @@ export class GameEngine {
 
   constructor(canvas: HTMLCanvasElement) {
     this.physics = new PhysicsEngine();
-    this.renderer = new GameRenderer(canvas);
+    this.renderer = new Renderer(canvas);
     this.initializeWebSocket();
   }
 
@@ -46,7 +46,10 @@ export class GameEngine {
         if (this.connectionAttempts < this.MAX_RECONNECT_ATTEMPTS) {
           this.connectionAttempts++;
           console.log(`Reconnecting... Attempt ${this.connectionAttempts}`);
-          setTimeout(() => this.initializeWebSocket(), this.RECONNECT_DELAY * this.connectionAttempts);
+          setTimeout(
+            () => this.initializeWebSocket(),
+            this.RECONNECT_DELAY * this.connectionAttempts,
+          );
         }
       };
 
@@ -59,18 +62,20 @@ export class GameEngine {
         try {
           const data = JSON.parse(event.data);
 
-          if (data.type === 'init') {
+          if (data.type === "init") {
             this.playerId = data.playerId;
-            const players = new Map(data.state.players.map((p: any) => [p.id, p]));
+            const players = new Map(
+              data.state.players.map((p: any) => [p.id, p]),
+            );
             this.state = {
               players,
-              environment: data.state.environment
+              environment: data.state.environment,
             };
           } else {
             const players = new Map(data.players.map((p: any) => [p.id, p]));
             this.state = {
               players,
-              environment: data.environment
+              environment: data.environment,
             };
           }
 
@@ -108,7 +113,7 @@ export class GameEngine {
       left: false,
       right: false,
       jumping: false,
-      direction: 0 // Rotation in radians
+      direction: 0, // Rotation in radians
     };
 
     // Listen for movement events
@@ -122,13 +127,17 @@ export class GameEngine {
     // Listen for jump events
     this.on("jump", (active) => {
       movementState.jumping = active;
-      this.sendEvent({ type: 'jump', active });
+      this.sendEvent({ type: "jump", active });
     });
 
     // Set up continuous movement updates
     setInterval(() => {
-      if (movementState.forward || movementState.backward || 
-          movementState.left || movementState.right) {
+      if (
+        movementState.forward ||
+        movementState.backward ||
+        movementState.left ||
+        movementState.right
+      ) {
         this.sendMovementUpdate(movementState);
       }
     }, 50); // Send updates every 50ms when moving
@@ -153,30 +162,30 @@ export class GameEngine {
 
     // Normalize diagonal movement
     if (x !== 0 && y !== 0) {
-      const magnitude = Math.sqrt(x*x + y*y);
+      const magnitude = Math.sqrt(x * x + y * y);
       x /= magnitude;
       y /= magnitude;
     }
 
     // Send the movement event
     if (x !== 0 || y !== 0 || rotation !== 0) {
-      this.sendEvent({ type: 'move', x, y, rotation });
+      this.sendEvent({ type: "move", x, y, rotation });
     }
   }
 
   join(tag: string) {
     console.log("Attempting to join game with tag:", tag);
-    const event: GameEvent = { type: 'join', tag };
+    const event: GameEvent = { type: "join", tag };
     this.sendEvent(event);
   }
 
   move(x: number, y: number) {
-    const event: GameEvent = { type: 'move', x, y };
+    const event: GameEvent = { type: "move", x, y };
     this.sendEvent(event);
   }
 
   charge(active: boolean) {
-    const event: GameEvent = { type: 'charge', active };
+    const event: GameEvent = { type: "charge", active };
     this.sendEvent(event);
   }
 
@@ -189,17 +198,19 @@ export class GameEngine {
 
       // Dispatch player stats for UI
       if (this.playerId && this.state.players) {
-        const players = Array.isArray(this.state.players) 
-          ? this.state.players 
+        const players = Array.isArray(this.state.players)
+          ? this.state.players
           : Array.from(this.state.players.values());
 
-        const currentPlayer = players.find(p => p.id === this.playerId);
+        const currentPlayer = players.find((p) => p.id === this.playerId);
         if (currentPlayer) {
-          window.dispatchEvent(new CustomEvent('playerStatsUpdated', {
-            detail: {
-              player: currentPlayer
-            }
-          }));
+          window.dispatchEvent(
+            new CustomEvent("playerStatsUpdated", {
+              detail: {
+                player: currentPlayer,
+              },
+            }),
+          );
         }
       }
     } catch (error) {
@@ -219,19 +230,19 @@ export class GameEngine {
     const callbacks = this.eventListeners.get(event) || [];
     this.eventListeners.set(
       event,
-      callbacks.filter(cb => cb !== callback)
+      callbacks.filter((cb) => cb !== callback),
     );
   }
 
   emit(event: string, ...args: any[]) {
     if (!this.eventListeners.has(event)) return;
     const callbacks = this.eventListeners.get(event) || [];
-    callbacks.forEach(callback => callback(...args));
+    callbacks.forEach((callback) => callback(...args));
   }
 
   destroy() {
     if (this.socket.readyState === WebSocket.OPEN) {
-      const event: GameEvent = { type: 'leave' };
+      const event: GameEvent = { type: "leave" };
       this.sendEvent(event);
     }
     this.socket.close();
