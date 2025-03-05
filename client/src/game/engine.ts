@@ -20,7 +20,7 @@ export class GameEngine {
 
   private initializeWebSocket() {
     const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
-    const host = window.location.host || "localhost:5000";
+    const host = window.location.host;
     const wsUrl = `${protocol}//${host}/ws`;
 
     console.log("Connecting to WebSocket at:", wsUrl);
@@ -59,7 +59,7 @@ export class GameEngine {
         }
 
         // Convert array back to Map
-        const players = new Map(data.players.map(player => [player.id, player]));
+        const players = new Map(data.players.map((player: any) => [player.id, player]));
         this.state = {
           players,
           environment: data.environment
@@ -76,7 +76,7 @@ export class GameEngine {
     if (!this.connectionReady) {
       console.warn("WebSocket not ready, waiting for connection...");
       if (this.socket.readyState === WebSocket.CONNECTING) {
-        setTimeout(() => this.sendEvent(event), 100);
+        setTimeout(() => this.sendEvent(event), 500); // Increased delay for better stability
       }
       return;
     }
