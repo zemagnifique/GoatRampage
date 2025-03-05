@@ -10,11 +10,10 @@ const RESPAWN_TIME = 120000; // 2 minutes
 export async function registerRoutes(app: Express): Promise<Server> {
   const httpServer = createServer(app);
 
-  // Change WebSocket path to avoid conflicts
+  // Initialize WebSocket server
   const wss = new WebSocketServer({ 
-    server: httpServer, 
-    path: '/game-ws',
-    perMessageDeflate: false // Disable compression for simpler debugging
+    noServer: true,
+    perMessageDeflate: false
   });
 
   // Game state
@@ -33,8 +32,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   }, 1000 / TICK_RATE);
 
+  // Handle WebSocket upgrade requests
+  httpServer.on('upgrade', (request, socket, head) => {
+    wss.handleUpgrade(request, socket, head, (ws) => {
+      console.log("New WebSocket connection established");
+      wss.emit('connection', ws, request);
+    });
+  });
+
   wss.on('connection', (ws) => {
-    console.log("New WebSocket connection established");
     let playerId: string | null = null;
 
     ws.on('message', async (data) => {
@@ -50,7 +56,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
               gameState.players.set(playerId, {
                 id: playerId,
                 tag: player.tag,
-                x: Math.random() * 800 + 100, // Keep away from edges
+                x: Math.random() * 800 + 100,
                 y: Math.random() * 600 + 100,
                 direction: 0,
                 health: 100,
@@ -99,29 +105,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.error("WebSocket error:", error);
     });
   });
-
-  // Convert Map to array before sending
-  function broadcastGameState(wss: WebSocketServer, state: GameState) {
-    const serializedState = {
-      players: Array.from(state.players.entries()).map(([id, player]) => ({
-        id,
-        ...player
-      })),
-      environment: state.environment
-    };
-
-    const payload = JSON.stringify(serializedState);
-
-    wss.clients.forEach(client => {
-      if (client.readyState === WebSocket.OPEN) {
-        try {
-          client.send(payload);
-        } catch (error) {
-          console.error("Error broadcasting state to client:", error);
-        }
-      }
-    });
-  }
 
   // Cleanup on server shutdown
   httpServer.on('close', () => {
@@ -203,5 +186,28 @@ function updateGameState(state: GameState) {
       return false;
     }
     return true;
+  });
+}
+
+// Convert Map to array before sending
+function broadcastGameState(wss: WebSocketServer, state: GameState) {
+  const serializedState = {
+    players: Array.from(state.players.entries()).map(([id, player]) => ({
+      id,
+      ...player
+    })),
+    environment: state.environment
+  };
+
+  const payload = JSON.stringify(serializedState);
+
+  wss.clients.forEach(client => {
+    if (client.readyState === WebSocket.OPEN) {
+      try {
+        client.send(payload);
+      } catch (error) {
+        console.error("Error broadcasting state to client:", error);
+      }
+    }
   });
 }
