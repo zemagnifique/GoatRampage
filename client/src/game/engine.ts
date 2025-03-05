@@ -19,11 +19,11 @@ export class GameEngine {
   }
 
   private initializeWebSocket() {
-    const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
-    const host = window.location.host;
-    const wsUrl = `${protocol}//${host}/ws`;
+    const wsProtocol = window.location.protocol === "https:" ? "wss:" : "ws:";
+    const wsHost = window.location.host;
+    const wsUrl = new URL("/ws", `${wsProtocol}//${wsHost}`);
 
-    console.log("Connecting to WebSocket at:", wsUrl);
+    console.log("Connecting to WebSocket at:", wsUrl.toString());
 
     this.socket = new WebSocket(wsUrl);
 
