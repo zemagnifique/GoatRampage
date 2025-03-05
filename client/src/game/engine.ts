@@ -21,9 +21,9 @@ export class GameEngine {
   private initializeWebSocket() {
     const wsProtocol = window.location.protocol === "https:" ? "wss:" : "ws:";
     const wsHost = window.location.host;
-    const wsUrl = new URL("/ws", `${wsProtocol}//${wsHost}`);
+    const wsUrl = `${wsProtocol}//${wsHost}/game-ws`; // Using the new game-ws path
 
-    console.log("Connecting to WebSocket at:", wsUrl.toString());
+    console.log("Connecting to WebSocket at:", wsUrl);
 
     this.socket = new WebSocket(wsUrl);
 
@@ -41,7 +41,7 @@ export class GameEngine {
       if (this.connectionAttempts < this.MAX_RECONNECT_ATTEMPTS) {
         this.connectionAttempts++;
         console.log(`Reconnecting... Attempt ${this.connectionAttempts}`);
-        setTimeout(() => this.initializeWebSocket(), 1000);
+        setTimeout(() => this.initializeWebSocket(), 1000 * this.connectionAttempts); // Exponential backoff
       }
     };
 
@@ -53,8 +53,8 @@ export class GameEngine {
     this.socket.onmessage = (event) => {
       try {
         const data = JSON.parse(event.data);
-        if (!data) {
-          console.warn("Received empty game state");
+        if (!data || !data.players) {
+          console.warn("Received invalid game state:", data);
           return;
         }
 

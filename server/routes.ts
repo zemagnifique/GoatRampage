@@ -9,7 +9,13 @@ const RESPAWN_TIME = 120000; // 2 minutes
 
 export async function registerRoutes(app: Express): Promise<Server> {
   const httpServer = createServer(app);
-  const wss = new WebSocketServer({ server: httpServer, path: '/ws' });
+
+  // Change WebSocket path to avoid conflicts
+  const wss = new WebSocketServer({ 
+    server: httpServer, 
+    path: '/game-ws',
+    perMessageDeflate: false // Disable compression for simpler debugging
+  });
 
   // Game state
   const gameState: GameState = {

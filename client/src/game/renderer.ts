@@ -2,35 +2,9 @@ import { type GameState, type PlayerState, type EnvironmentObject } from "@share
 
 export class GameRenderer {
   private ctx: CanvasRenderingContext2D;
-  private goatSprites: HTMLImageElement[];
-  private environmentSprites: HTMLImageElement[];
-  private spritesLoaded: boolean = false;
 
   constructor(private canvas: HTMLCanvasElement) {
     this.ctx = canvas.getContext('2d')!;
-
-    // Load sprites
-    this.goatSprites = [];
-    this.environmentSprites = [];
-
-    // Load goat sprites
-    Promise.all([
-      this.loadSprite("goat1.png"),
-      this.loadSprite("goat2.png"),
-      // Add more sprite loading as needed
-    ]).then(sprites => {
-      this.goatSprites = sprites;
-      this.spritesLoaded = true;
-    });
-  }
-
-  private loadSprite(path: string): Promise<HTMLImageElement> {
-    return new Promise((resolve, reject) => {
-      const img = new Image();
-      img.onload = () => resolve(img);
-      img.onerror = reject;
-      img.src = path;
-    });
   }
 
   render(state: GameState) {
@@ -51,7 +25,7 @@ export class GameRenderer {
   }
 
   private drawPlayer(player: PlayerState) {
-    // Draw player circle as fallback if sprites aren't loaded
+    // Draw player circle
     this.ctx.beginPath();
     this.ctx.arc(player.x, player.y, 25, 0, Math.PI * 2);
     this.ctx.fillStyle = player.isCharging ? 'red' : 'white';
