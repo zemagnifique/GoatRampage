@@ -10,11 +10,12 @@ const RESPAWN_TIME = 120000; // 2 minutes
 export async function registerRoutes(app: Express): Promise<Server> {
   const httpServer = createServer(app);
 
-  // Change WebSocket path to avoid conflicts
+  // Configure WebSocket server with more explicit settings
   const wss = new WebSocketServer({ 
-    server: httpServer, 
+    server: httpServer,
     path: '/game-ws',
-    perMessageDeflate: false // Disable compression for simpler debugging
+    perMessageDeflate: false,
+    clientTracking: true
   });
 
   // Game state
@@ -33,8 +34,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   }, 1000 / TICK_RATE);
 
-  wss.on('connection', (ws) => {
-    console.log("New WebSocket connection established");
+  wss.on('connection', (ws, req) => {
+    console.log("New WebSocket connection established from:", req.url);
     let playerId: string | null = null;
 
     ws.on('message', async (data) => {
@@ -50,7 +51,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
               gameState.players.set(playerId, {
                 id: playerId,
                 tag: player.tag,
-                x: Math.random() * 800 + 100, // Keep away from edges
+                x: Math.random() * 800 + 100,
                 y: Math.random() * 600 + 100,
                 direction: 0,
                 health: 100,
@@ -58,6 +59,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
                 isCharging: false
               });
               console.log(`Player ${playerId} (${player.tag}) joined the game`);
+
+              // Send initial state to the player
+              ws.send(JSON.stringify({
+                type: 'init',
+                playerId,
+                state: {
+                  players: Array.from(gameState.players.entries()).map(([id, player]) => ({
+                    id,
+                    ...player
+                  })),
+                  environment: gameState.environment
+                }
+              }));
             }
             break;
 
@@ -97,6 +111,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
     ws.on('error', (error) => {
       console.error("WebSocket error:", error);
+      if (playerId) {
+        gameState.players.delete(playerId);
+      }
     });
   });
 
@@ -126,6 +143,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Cleanup on server shutdown
   httpServer.on('close', () => {
     clearInterval(gameLoop);
+    wss.close();
   });
 
   return httpServer;

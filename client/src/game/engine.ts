@@ -22,61 +22,67 @@ export class GameEngine {
   private initializeWebSocket() {
     const wsProtocol = window.location.protocol === "https:" ? "wss:" : "ws:";
     const wsHost = window.location.host;
-    const wsUrl = `${wsProtocol}//${wsHost}/game-ws`; // Using the new game-ws path
+    const wsUrl = `${wsProtocol}//${wsHost}/game-ws`;
 
-    console.log("Connecting to WebSocket at:", wsUrl);
+    console.log("Attempting to connect to WebSocket at:", wsUrl);
 
-    this.socket = new WebSocket(wsUrl);
+    try {
+      this.socket = new WebSocket(wsUrl);
 
-    this.socket.onopen = () => {
-      console.log("WebSocket connection established");
-      this.connectionReady = true;
-      this.connectionAttempts = 0;
-    };
+      this.socket.onopen = () => {
+        console.log("WebSocket connection established");
+        this.connectionReady = true;
+        this.connectionAttempts = 0;
+      };
 
-    this.socket.onclose = () => {
-      console.log("WebSocket connection closed");
-      this.connectionReady = false;
+      this.socket.onclose = () => {
+        console.log("WebSocket connection closed");
+        this.connectionReady = false;
 
-      // Attempt to reconnect if not max attempts
-      if (this.connectionAttempts < this.MAX_RECONNECT_ATTEMPTS) {
-        this.connectionAttempts++;
-        console.log(`Reconnecting... Attempt ${this.connectionAttempts}`);
-        setTimeout(() => this.initializeWebSocket(), this.RECONNECT_DELAY * this.connectionAttempts);
-      }
-    };
-
-    this.socket.onerror = (error) => {
-      console.error("WebSocket error:", error);
-      this.connectionReady = false;
-    };
-
-    this.socket.onmessage = (event) => {
-      try {
-        const data = JSON.parse(event.data);
-        if (!data || !data.players) {
-          console.warn("Received invalid game state:", data);
-          return;
+        if (this.connectionAttempts < this.MAX_RECONNECT_ATTEMPTS) {
+          this.connectionAttempts++;
+          console.log(`Reconnecting... Attempt ${this.connectionAttempts}`);
+          setTimeout(() => this.initializeWebSocket(), this.RECONNECT_DELAY * this.connectionAttempts);
         }
+      };
 
-        // Convert array back to Map
-        const players = new Map(data.players.map((player: any) => [player.id, player]));
-        this.state = {
-          players,
-          environment: data.environment
-        };
+      this.socket.onerror = (error) => {
+        console.error("WebSocket error:", error);
+        this.connectionReady = false;
+      };
 
-        this.update();
-      } catch (error) {
-        console.error("Error parsing game state:", error);
-      }
-    };
+      this.socket.onmessage = (event) => {
+        try {
+          const data = JSON.parse(event.data);
+
+          if (data.type === 'init') {
+            this.playerId = data.playerId;
+            const players = new Map(data.state.players.map((p: any) => [p.id, p]));
+            this.state = {
+              players,
+              environment: data.state.environment
+            };
+          } else {
+            const players = new Map(data.players.map((p: any) => [p.id, p]));
+            this.state = {
+              players,
+              environment: data.environment
+            };
+          }
+
+          this.update();
+        } catch (error) {
+          console.error("Error processing game state:", error);
+        }
+      };
+    } catch (error) {
+      console.error("Error creating WebSocket connection:", error);
+    }
   }
 
   private sendEvent(event: GameEvent) {
     if (!this.connectionReady || this.socket.readyState !== WebSocket.OPEN) {
       console.warn("WebSocket not ready, waiting for connection...");
-      // Only retry if still connecting, otherwise drop the message
       if (this.socket.readyState === WebSocket.CONNECTING) {
         setTimeout(() => this.sendEvent(event), 500);
       }
@@ -121,7 +127,8 @@ export class GameEngine {
     if (this.socket.readyState === WebSocket.OPEN) {
       const event: GameEvent = { type: 'leave' };
       this.sendEvent(event);
-      this.socket.close();
     }
+    this.socket.close();
+    this.renderer.dispose();
   }
 }
