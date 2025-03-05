@@ -10,6 +10,8 @@ export class Renderer {
   private lights: THREE.Light[] = [];
   private textureLoader = new THREE.TextureLoader();
   private groundSize = 5000;
+  private previousCameraTarget?: THREE.Vector3;
+  private forceCanvasRenderer = false; // Set to true to force canvas renderer
 
   constructor(private canvas: HTMLCanvasElement) {
     // Create scene
@@ -26,17 +28,36 @@ export class Renderer {
     this.camera.position.set(0, 10, 20);
     this.camera.lookAt(0, 0, 0);
 
-    // Try to create WebGL renderer
-    try {
-      this.renderer = new THREE.WebGLRenderer({
-        canvas: this.canvas,
-        antialias: true
-      });
-      this.renderer.setSize(window.innerWidth, window.innerHeight);
-      this.renderer.setPixelRatio(window.devicePixelRatio);
-      console.log("WebGL renderer created successfully");
-    } catch (error) {
-      console.warn("WebGL renderer creation failed, using fallback 2D canvas", error);
+    // Try to create WebGL renderer with better error handling
+    if (!this.forceCanvasRenderer) {
+      try {
+        // Create with lower precision for better compatibility
+        this.renderer = new THREE.WebGLRenderer({
+          canvas: this.canvas,
+          antialias: true,
+          precision: 'mediump',
+          powerPreference: 'low-power'
+        });
+        this.renderer.setSize(window.innerWidth, window.innerHeight);
+        this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.5)); // Limit pixel ratio
+        
+        // Enable shadows with optimization
+        this.renderer.shadowMap.enabled = true;
+        this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+        
+        // Handle WebGL context loss
+        this.canvas.addEventListener('webglcontextlost', (event) => {
+          event.preventDefault();
+          console.warn("WebGL context lost, will attempt to restore");
+        });
+        
+        console.log("WebGL renderer created successfully");
+      } catch (error) {
+        console.warn("WebGL renderer creation failed, using fallback 2D canvas", error);
+        this.fallbackCtx = this.canvas.getContext('2d');
+      }
+    } else {
+      console.log("Using 2D canvas renderer as requested");
       this.fallbackCtx = this.canvas.getContext('2d');
     }
 
@@ -96,39 +117,90 @@ export class Renderer {
   }
 
   private createGround() {
-    // Create a more detailed ground with texture
+    // Create a more detailed ground with better texture
     const groundSize = this.groundSize;
-    const groundGeometry = new THREE.PlaneGeometry(groundSize, groundSize, 32, 32);
+    const groundGeometry = new THREE.PlaneGeometry(groundSize, groundSize, 64, 64);
     
-    // Create a procedural texture for the ground
+    // Create a high-quality procedural texture for the ground
     const canvas = document.createElement('canvas');
-    canvas.width = 512;
-    canvas.height = 512;
+    canvas.width = 1024;
+    canvas.height = 1024;
     const context = canvas.getContext('2d');
     
     if (context) {
-      // Fill with grass color
-      context.fillStyle = '#4CAF50';
+      // Create gradient background
+      const gradient = context.createLinearGradient(0, 0, 1024, 1024);
+      gradient.addColorStop(0, '#4CAF50');  // Base green
+      gradient.addColorStop(0.3, '#43A047'); // Slightly darker
+      gradient.addColorStop(0.7, '#43A047'); // Slightly darker
+      gradient.addColorStop(1, '#4CAF50');  // Back to base
+      
+      context.fillStyle = gradient;
       context.fillRect(0, 0, canvas.width, canvas.height);
       
-      // Add some noise/variation
-      for (let i = 0; i < 5000; i++) {
+      // Add grass texture details
+      for (let i = 0; i < 20000; i++) {
         const x = Math.random() * canvas.width;
         const y = Math.random() * canvas.height;
         const size = Math.random() * 3 + 1;
-        context.fillStyle = Math.random() > 0.5 ? '#388E3C' : '#81C784'; // Dark/light green
+        
+        // More natural grass color variation
+        const colorValue = Math.floor(Math.random() * 20);
+        const baseColor = Math.random() > 0.7 ? 40 : 60; // Some darker patches
+        context.fillStyle = `rgb(${baseColor + colorValue}, ${130 + colorValue}, ${60 + colorValue})`;
+        
         context.fillRect(x, y, size, size);
       }
       
-      // Add some dirt patches
-      for (let i = 0; i < 20; i++) {
-        const x = Math.random() * canvas.width;
-        const y = Math.random() * canvas.height;
-        const radius = Math.random() * 20 + 5;
-        context.fillStyle = '#795548'; // Brown
+      // Add dirt paths - more natural looking
+      for (let i = 0; i < 10; i++) {
+        const pathStartX = Math.random() * canvas.width;
+        const pathStartY = Math.random() * canvas.height;
+        const pathLength = Math.random() * 300 + 100;
+        const pathAngle = Math.random() * Math.PI * 2;
+        
+        const pathWidth = Math.random() * 40 + 20;
+        
+        // Draw a curved dirt path
+        context.fillStyle = '#8B6D43'; // Dirt color
         context.beginPath();
-        context.arc(x, y, radius, 0, Math.PI * 2);
-        context.fill();
+        context.moveTo(pathStartX, pathStartY);
+        
+        // Create a curved path with bezier curves
+        const controlX1 = pathStartX + Math.cos(pathAngle) * pathLength * 0.3;
+        const controlY1 = pathStartY + Math.sin(pathAngle) * pathLength * 0.3;
+        const controlX2 = pathStartX + Math.cos(pathAngle) * pathLength * 0.7;
+        const controlY2 = pathStartY + Math.sin(pathAngle) * pathLength * 0.7;
+        const endX = pathStartX + Math.cos(pathAngle) * pathLength;
+        const endY = pathStartY + Math.sin(pathAngle) * pathLength;
+        
+        context.bezierCurveTo(controlX1, controlY1, controlX2, controlY2, endX, endY);
+        context.lineWidth = pathWidth;
+        context.stroke();
+        
+        // Add details to the path
+        for (let j = 0; j < 100; j++) {
+          const t = j / 100;
+          const x = Math.pow(1-t, 3) * pathStartX + 
+                   3 * Math.pow(1-t, 2) * t * controlX1 + 
+                   3 * (1-t) * Math.pow(t, 2) * controlX2 + 
+                   Math.pow(t, 3) * endX;
+          const y = Math.pow(1-t, 3) * pathStartY + 
+                   3 * Math.pow(1-t, 2) * t * controlY1 + 
+                   3 * (1-t) * Math.pow(t, 2) * controlY2 + 
+                   Math.pow(t, 3) * endY;
+          
+          context.fillStyle = Math.random() > 0.5 ? '#8B6D43' : '#9E7E53';
+          context.beginPath();
+          context.arc(
+            x + (Math.random() - 0.5) * pathWidth,
+            y + (Math.random() - 0.5) * pathWidth,
+            Math.random() * 5 + 2,
+            0,
+            Math.PI * 2
+          );
+          context.fill();
+        }
       }
     }
     
@@ -175,24 +247,54 @@ export class Renderer {
   }
 
   private createPlayerObject(player: Player): THREE.Object3D {
-    // Create a goat representation
+    // Create an improved goat representation
     const group = new THREE.Group();
 
-    // Body
-    const bodyGeometry = new THREE.CapsuleGeometry(0.5, 1, 4, 8);
-    bodyGeometry.rotateZ(Math.PI / 2);
-    const bodyMaterial = new THREE.MeshStandardMaterial({ 
-      color: player.isCharging ? 0xFF0000 : 0xF5F5DC // Change color when charging
+    // Create fur texture
+    const furTexture = this.createProceduralTexture(256, 256, (ctx) => {
+      // Base color
+      ctx.fillStyle = player.isCharging ? '#FF8080' : '#F5F5DC';
+      ctx.fillRect(0, 0, 256, 256);
+      
+      // Add fur pattern
+      for (let i = 0; i < 1000; i++) {
+        ctx.fillStyle = player.isCharging ? 
+          (Math.random() > 0.5 ? '#FF6060' : '#FF4040') : 
+          (Math.random() > 0.5 ? '#E5E5C2' : '#FCFCF0');
+        
+        ctx.beginPath();
+        ctx.arc(
+          Math.random() * 256,
+          Math.random() * 256,
+          Math.random() * 3 + 1,
+          0,
+          Math.PI * 2
+        );
+        ctx.fill();
+      }
     });
-    const body = new THREE.Mesh(bodyGeometry, bodyMaterial);
-    body.position.y = 0.8;
+    
+    const furMaterial = new THREE.MeshStandardMaterial({ 
+      map: furTexture,
+      roughness: 1.0,
+      metalness: 0.1
+    });
+
+    // Body - more goat-like with an elongated body
+    const bodyGeometry = new THREE.CapsuleGeometry(0.5, 1.2, 8, 16);
+    bodyGeometry.rotateZ(Math.PI / 2);
+    const body = new THREE.Mesh(bodyGeometry, furMaterial);
+    body.castShadow = true;
+    body.receiveShadow = true;
+    body.position.y = 0.9;
     group.add(body);
 
-    // Head
-    const headGeometry = new THREE.CapsuleGeometry(0.3, 0.5, 4, 8);
-    const headMaterial = new THREE.MeshStandardMaterial({ color: 0xD2B48C });
-    const head = new THREE.Mesh(headGeometry, headMaterial);
-    head.position.set(0.8, 1.2, 0);
+    // Head - improved with better shape
+    const headGeometry = new THREE.CapsuleGeometry(0.3, 0.5, 8, 16);
+    const head = new THREE.Mesh(headGeometry, furMaterial);
+    head.castShadow = true;
+    head.receiveShadow = true;
+    head.position.set(0.9, 1.3, 0);
     head.rotation.z = -Math.PI / 4;
     group.add(head);
 
@@ -282,17 +384,64 @@ export class Renderer {
     // Create different geometries based on type
     switch (object.type) {
       case EntityType.TREE:
-        // Trunk
+        // Trunk with improved texture
         const trunkGeometry = new THREE.CylinderGeometry(0.3, 0.4, 2, 8);
-        const trunkMaterial = new THREE.MeshStandardMaterial({ color: 0x8B4513 });
+        const barkTexture = this.createProceduralTexture(128, 128, (ctx) => {
+          ctx.fillStyle = '#8B4513';
+          ctx.fillRect(0, 0, 128, 128);
+          
+          // Add bark texture
+          for (let i = 0; i < 50; i++) {
+            ctx.fillStyle = Math.random() > 0.5 ? '#6B4513' : '#9B6530';
+            ctx.fillRect(
+              Math.random() * 128, 
+              Math.random() * 128, 
+              Math.random() * 10 + 2, 
+              Math.random() * 30 + 5
+            );
+          }
+        });
+        
+        const trunkMaterial = new THREE.MeshStandardMaterial({ 
+          map: barkTexture,
+          roughness: 0.9,
+          metalness: 0.1
+        });
         const trunk = new THREE.Mesh(trunkGeometry, trunkMaterial);
+        trunk.castShadow = true;
+        trunk.receiveShadow = true;
         trunk.position.y = 1;
         group.add(trunk);
 
-        // Leaves
+        // Leaves with improved texture
         const leavesGeometry = new THREE.ConeGeometry(1.5, 3, 8);
-        const leavesMaterial = new THREE.MeshStandardMaterial({ color: 0x228B22 });
+        const leavesTexture = this.createProceduralTexture(128, 128, (ctx) => {
+          ctx.fillStyle = '#228B22';
+          ctx.fillRect(0, 0, 128, 128);
+          
+          // Add leaf details
+          for (let i = 0; i < 100; i++) {
+            ctx.fillStyle = Math.random() > 0.7 ? '#196619' : '#2EA12E';
+            ctx.beginPath();
+            ctx.arc(
+              Math.random() * 128,
+              Math.random() * 128,
+              Math.random() * 8 + 2,
+              0,
+              Math.PI * 2
+            );
+            ctx.fill();
+          }
+        });
+        
+        const leavesMaterial = new THREE.MeshStandardMaterial({ 
+          map: leavesTexture,
+          roughness: 0.8,
+          metalness: 0.1
+        });
         const leaves = new THREE.Mesh(leavesGeometry, leavesMaterial);
+        leaves.castShadow = true;
+        leaves.receiveShadow = true;
         leaves.position.y = 3;
         group.add(leaves);
         break;
@@ -466,9 +615,9 @@ export class Renderer {
     if (player) {
       // Calculate improved third-person camera position
       // Position camera behind and slightly above the player
-      const cameraDistance = 15; // Distance behind player
-      const cameraHeight = 8; // Height above ground
-      const lookAheadDistance = 5; // Distance to look ahead of player
+      const cameraDistance = 10; // Distance behind player (reduced for better view)
+      const cameraHeight = 5; // Height above ground (lowered for better view)
+      const lookAheadDistance = 8; // Distance to look ahead of player (increased)
       
       // Position based on player's rotation
       this.camera.position.x = player.x - cameraDistance * Math.cos(player.rotation || 0);
@@ -478,8 +627,17 @@ export class Renderer {
       // Look at a point slightly ahead of the player
       const lookAtX = player.x + lookAheadDistance * Math.cos(player.rotation || 0);
       const lookAtZ = player.y + lookAheadDistance * Math.sin(player.rotation || 0);
+      const lookAtY = player.isCharging ? 1.5 : 1; // Look at goat's head
       
-      this.camera.lookAt(lookAtX, player.isCharging ? 2 : 1, lookAtZ); // Look a bit higher if charging
+      this.camera.lookAt(lookAtX, lookAtY, lookAtZ);
+      
+      // Smooth camera transitions (damping)
+      if (this.previousCameraTarget) {
+        this.camera.position.lerp(this.camera.position, 0.1);
+        this.camera.quaternion.slerp(this.camera.quaternion, 0.1);
+      }
+      
+      this.previousCameraTarget = new THREE.Vector3(lookAtX, lookAtY, lookAtZ);
     }
   }
 
@@ -622,6 +780,21 @@ export class Renderer {
     }
   }
 
+  private createProceduralTexture(width: number, height: number, drawFn: (ctx: CanvasRenderingContext2D) => void): THREE.Texture {
+    const canvas = document.createElement('canvas');
+    canvas.width = width;
+    canvas.height = height;
+    const context = canvas.getContext('2d');
+    
+    if (context) {
+      drawFn(context);
+    }
+    
+    const texture = new THREE.CanvasTexture(canvas);
+    texture.needsUpdate = true;
+    return texture;
+  }
+  
   dispose() {
     // Cleanup event listeners and resources
     window.removeEventListener('resize', this.handleResize.bind(this));
