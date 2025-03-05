@@ -9,23 +9,40 @@ export class GameEngine {
   private renderer: GameRenderer;
   private playerId: string | null = null;
   private connectionReady: boolean = false;
+  private connectionAttempts: number = 0;
+  private readonly MAX_RECONNECT_ATTEMPTS = 5;
 
   constructor(canvas: HTMLCanvasElement) {
-    const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
-    const wsUrl = `${protocol}//${window.location.host}/ws`;
-    this.socket = new WebSocket(wsUrl);
     this.physics = new PhysicsEngine();
     this.renderer = new GameRenderer(canvas);
+    this.initializeWebSocket();
+  }
 
-    // Setup WebSocket event handlers
+  private initializeWebSocket() {
+    const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
+    const host = window.location.host || "localhost:5000";
+    const wsUrl = `${protocol}//${host}/ws`;
+
+    console.log("Connecting to WebSocket at:", wsUrl);
+
+    this.socket = new WebSocket(wsUrl);
+
     this.socket.onopen = () => {
       console.log("WebSocket connection established");
       this.connectionReady = true;
+      this.connectionAttempts = 0;
     };
 
     this.socket.onclose = () => {
       console.log("WebSocket connection closed");
       this.connectionReady = false;
+
+      // Attempt to reconnect if not max attempts
+      if (this.connectionAttempts < this.MAX_RECONNECT_ATTEMPTS) {
+        this.connectionAttempts++;
+        console.log(`Reconnecting... Attempt ${this.connectionAttempts}`);
+        setTimeout(() => this.initializeWebSocket(), 1000);
+      }
     };
 
     this.socket.onerror = (error) => {
@@ -35,7 +52,13 @@ export class GameEngine {
 
     this.socket.onmessage = (event) => {
       try {
-        this.state = JSON.parse(event.data);
+        const data = JSON.parse(event.data);
+        if (!data) {
+          console.warn("Received empty game state");
+          return;
+        }
+
+        this.state = data;
         this.update();
       } catch (error) {
         console.error("Error parsing game state:", error);
@@ -46,13 +69,21 @@ export class GameEngine {
   private sendEvent(event: GameEvent) {
     if (!this.connectionReady) {
       console.warn("WebSocket not ready, waiting for connection...");
-      setTimeout(() => this.sendEvent(event), 100);
+      if (this.socket.readyState === WebSocket.CONNECTING) {
+        setTimeout(() => this.sendEvent(event), 100);
+      }
       return;
     }
-    this.socket.send(JSON.stringify(event));
+
+    try {
+      this.socket.send(JSON.stringify(event));
+    } catch (error) {
+      console.error("Error sending event:", error);
+    }
   }
 
   join(tag: string) {
+    console.log("Attempting to join game with tag:", tag);
     const event: GameEvent = { type: 'join', tag };
     this.sendEvent(event);
   }
@@ -70,8 +101,12 @@ export class GameEngine {
   private update() {
     if (!this.state) return;
 
-    this.physics.update(this.state);
-    this.renderer.render(this.state);
+    try {
+      this.physics.update(this.state);
+      this.renderer.render(this.state);
+    } catch (error) {
+      console.error("Error updating game state:", error);
+    }
   }
 
   destroy() {

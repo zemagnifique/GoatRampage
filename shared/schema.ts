@@ -2,6 +2,15 @@ import { pgTable, text, serial, integer, boolean, real } from "drizzle-orm/pg-co
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
+export enum EntityType {
+  PLAYER = 'player',
+  FENCE = 'fence',
+  HAY_BALE = 'hay_bale',
+  BARN = 'barn',
+  HOUSE = 'house',
+  CAR = 'car'
+}
+
 export const players = pgTable("players", {
   id: serial("id").primaryKey(),
   tag: text("tag").notNull().unique(),

@@ -2,7 +2,7 @@ import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { WebSocketServer, WebSocket } from "ws";
 import { storage } from "./storage";
-import { type GameState, type GameEvent, type PlayerState } from "@shared/schema";
+import { type GameState, type GameEvent, type PlayerState, type EnvironmentObject, EntityType } from "@shared/schema";
 
 const TICK_RATE = 60;
 const RESPAWN_TIME = 120000; // 2 minutes
@@ -18,67 +18,85 @@ export async function registerRoutes(app: Express): Promise<Server> {
   };
 
   // Game loop
-  setInterval(() => {
-    updateGameState(gameState);
-    broadcastGameState(wss, gameState);
+  const gameLoop = setInterval(() => {
+    try {
+      updateGameState(gameState);
+      broadcastGameState(wss, gameState);
+    } catch (error) {
+      console.error("Error in game loop:", error);
+    }
   }, 1000 / TICK_RATE);
 
   wss.on('connection', (ws) => {
+    console.log("New WebSocket connection established");
     let playerId: string | null = null;
 
     ws.on('message', async (data) => {
-      const event: GameEvent = JSON.parse(data.toString());
+      try {
+        const event: GameEvent = JSON.parse(data.toString());
+        console.log("Received event:", event);
 
-      switch (event.type) {
-        case 'join':
-          const player = await handlePlayerJoin(event.tag, ws);
-          if (player) {
-            playerId = player.id.toString();
-            gameState.players.set(playerId, {
-              id: playerId,
-              tag: player.tag,
-              x: Math.random() * 1000,
-              y: Math.random() * 1000,
-              direction: 0,
-              health: 100,
-              score: 0,
-              isCharging: false
-            });
-          }
-          break;
-
-        case 'move':
-          if (playerId) {
-            const player = gameState.players.get(playerId);
+        switch (event.type) {
+          case 'join':
+            const player = await handlePlayerJoin(event.tag, ws);
             if (player) {
+              playerId = player.id.toString();
+              gameState.players.set(playerId, {
+                id: playerId,
+                tag: player.tag,
+                x: Math.random() * 800 + 100, // Keep away from edges
+                y: Math.random() * 600 + 100,
+                direction: 0,
+                health: 100,
+                score: 0,
+                isCharging: false
+              });
+              console.log(`Player ${playerId} (${player.tag}) joined the game`);
+            }
+            break;
+
+          case 'move':
+            if (playerId && gameState.players.has(playerId)) {
+              const player = gameState.players.get(playerId)!;
               player.x = event.x;
               player.y = event.y;
             }
-          }
-          break;
+            break;
 
-        case 'charge':
-          if (playerId) {
-            const player = gameState.players.get(playerId);
-            if (player) {
+          case 'charge':
+            if (playerId && gameState.players.has(playerId)) {
+              const player = gameState.players.get(playerId)!;
               player.isCharging = event.active;
             }
-          }
-          break;
+            break;
 
-        case 'leave':
-          if (playerId) {
-            gameState.players.delete(playerId);
-          }
-          break;
+          case 'leave':
+            if (playerId) {
+              gameState.players.delete(playerId);
+              console.log(`Player ${playerId} left the game`);
+            }
+            break;
+        }
+      } catch (error) {
+        console.error("Error handling message:", error);
       }
     });
 
     ws.on('close', () => {
       if (playerId) {
         gameState.players.delete(playerId);
+        console.log(`Player ${playerId} disconnected`);
       }
     });
+
+    ws.on('error', (error) => {
+      console.error("WebSocket error:", error);
+    });
+  });
+
+  // Cleanup on server shutdown
+  httpServer.on('close', () => {
+    clearInterval(gameLoop);
   });
 
   return httpServer;
@@ -93,27 +111,81 @@ async function handlePlayerJoin(tag: string, ws: WebSocket): Promise<{ id: numbe
     const newPlayer = await storage.createPlayer({ tag });
     return newPlayer;
   } catch (error) {
+    console.error("Error handling player join:", error);
     ws.close();
     return null;
   }
 }
 
 function generateInitialEnvironment(): EnvironmentObject[] {
-  // Generate initial environment objects (fences, hay bales, etc.)
-  return [
-    // Add environment objects here
-  ];
+  const environment: EnvironmentObject[] = [];
+
+  // Add fences around the map
+  for (let x = 0; x < 1000; x += 100) {
+    environment.push({
+      id: `fence-top-${x}`,
+      type: EntityType.FENCE,
+      x,
+      y: 0,
+      width: 100,
+      height: 20,
+      health: 100
+    });
+
+    environment.push({
+      id: `fence-bottom-${x}`,
+      type: EntityType.FENCE,
+      x,
+      y: 780,
+      width: 100,
+      height: 20,
+      health: 100
+    });
+  }
+
+  // Add some hay bales
+  for (let i = 0; i < 5; i++) {
+    environment.push({
+      id: `hay-${i}`,
+      type: EntityType.HAY_BALE,
+      x: Math.random() * 800 + 100,
+      y: Math.random() * 600 + 100,
+      width: 40,
+      height: 40,
+      health: 100,
+      respawnTime: RESPAWN_TIME
+    });
+  }
+
+  return environment;
 }
 
 function updateGameState(state: GameState) {
-  // Update game physics, collisions, etc.
-  // This is where the game logic would go
+  // Update destructible objects
+  state.environment = state.environment.filter(obj => {
+    if (obj.health <= 0 && obj.respawnTime) {
+      // Schedule respawn
+      setTimeout(() => {
+        state.environment.push({
+          ...obj,
+          health: 100
+        });
+      }, obj.respawnTime);
+      return false;
+    }
+    return true;
+  });
 }
 
 function broadcastGameState(wss: WebSocketServer, state: GameState) {
-  wss.clients.forEach((client) => {
+  const payload = JSON.stringify(state);
+  wss.clients.forEach(client => {
     if (client.readyState === WebSocket.OPEN) {
-      client.send(JSON.stringify(state));
+      try {
+        client.send(payload);
+      } catch (error) {
+        console.error("Error broadcasting state to client:", error);
+      }
     }
   });
 }
