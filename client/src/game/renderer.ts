@@ -602,7 +602,9 @@ export class GameRenderer {
     // Find the player in the state
     const players = Array.isArray(state.players) 
       ? state.players
-      : Array.from(state.players.values());
+      : state.players instanceof Map
+        ? Array.from(state.players.values())
+        : [];
     
     const player = players.find(p => p.id === playerId);
     
