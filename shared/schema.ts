@@ -30,6 +30,10 @@ export type InsertPlayer = z.infer<typeof insertPlayerSchema>;
 export interface GameState {
   players: Map<string, PlayerState>;
   environment: EnvironmentObject[];
+  statistics: {
+    damageDealt: Map<string, number>;
+    distanceWalked: Map<string, number>;
+  };
 }
 
 export interface PlayerState {
@@ -41,6 +45,9 @@ export interface PlayerState {
   health: number;
   score: number;
   isCharging: boolean;
+  damageDealt: number;
+  distanceWalked: number;
+  lastPosition?: { x: number, y: number };
 }
 
 export interface EnvironmentObject {

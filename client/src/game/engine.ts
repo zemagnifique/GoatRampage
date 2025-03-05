@@ -118,6 +118,22 @@ export class GameEngine {
     try {
       this.physics.update(this.state);
       this.renderer.render(this.state);
+      
+      // Dispatch player stats for UI
+      if (this.playerId && this.state.players) {
+        const players = Array.isArray(this.state.players) 
+          ? this.state.players 
+          : Array.from(this.state.players.values());
+        
+        const currentPlayer = players.find(p => p.id === this.playerId);
+        if (currentPlayer) {
+          window.dispatchEvent(new CustomEvent('playerStatsUpdated', {
+            detail: {
+              player: currentPlayer
+            }
+          }));
+        }
+      }
     } catch (error) {
       console.error("Error updating game state:", error);
     }

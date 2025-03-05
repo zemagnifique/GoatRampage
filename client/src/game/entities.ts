@@ -36,6 +36,9 @@ export class Player implements Entity {
   chargeVelocity: number = 0;
   score: number = 0;
   tag: string;
+  damageDealt: number = 0;
+  distanceWalked: number = 0;
+  lastPosition?: { x: number, y: number };
 
   static readonly MAX_HEALTH = 100;
   static readonly CHARGE_SPEED = 8;
@@ -52,6 +55,9 @@ export class Player implements Entity {
     this.tag = state.tag;
     this.isCharging = state.isCharging;
     this.score = state.score;
+    this.damageDealt = state.damageDealt || 0;
+    this.distanceWalked = state.distanceWalked || 0;
+    this.lastPosition = state.lastPosition;
   }
 
   update(delta: number) {
