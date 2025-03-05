@@ -11,6 +11,7 @@ export class GameEngine {
   private connectionReady: boolean = false;
   private connectionAttempts: number = 0;
   private readonly MAX_RECONNECT_ATTEMPTS = 5;
+  private readonly RECONNECT_DELAY = 1000;
 
   constructor(canvas: HTMLCanvasElement) {
     this.physics = new PhysicsEngine();
@@ -41,7 +42,7 @@ export class GameEngine {
       if (this.connectionAttempts < this.MAX_RECONNECT_ATTEMPTS) {
         this.connectionAttempts++;
         console.log(`Reconnecting... Attempt ${this.connectionAttempts}`);
-        setTimeout(() => this.initializeWebSocket(), 1000 * this.connectionAttempts); // Exponential backoff
+        setTimeout(() => this.initializeWebSocket(), this.RECONNECT_DELAY * this.connectionAttempts);
       }
     };
 
@@ -73,10 +74,11 @@ export class GameEngine {
   }
 
   private sendEvent(event: GameEvent) {
-    if (!this.connectionReady) {
+    if (!this.connectionReady || this.socket.readyState !== WebSocket.OPEN) {
       console.warn("WebSocket not ready, waiting for connection...");
+      // Only retry if still connecting, otherwise drop the message
       if (this.socket.readyState === WebSocket.CONNECTING) {
-        setTimeout(() => this.sendEvent(event), 500); // Increased delay for better stability
+        setTimeout(() => this.sendEvent(event), 500);
       }
       return;
     }
@@ -119,7 +121,7 @@ export class GameEngine {
     if (this.socket.readyState === WebSocket.OPEN) {
       const event: GameEvent = { type: 'leave' };
       this.sendEvent(event);
+      this.socket.close();
     }
-    this.socket.close();
   }
 }

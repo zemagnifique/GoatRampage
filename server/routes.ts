@@ -100,6 +100,29 @@ export async function registerRoutes(app: Express): Promise<Server> {
     });
   });
 
+  // Convert Map to array before sending
+  function broadcastGameState(wss: WebSocketServer, state: GameState) {
+    const serializedState = {
+      players: Array.from(state.players.entries()).map(([id, player]) => ({
+        id,
+        ...player
+      })),
+      environment: state.environment
+    };
+
+    const payload = JSON.stringify(serializedState);
+
+    wss.clients.forEach(client => {
+      if (client.readyState === WebSocket.OPEN) {
+        try {
+          client.send(payload);
+        } catch (error) {
+          console.error("Error broadcasting state to client:", error);
+        }
+      }
+    });
+  }
+
   // Cleanup on server shutdown
   httpServer.on('close', () => {
     clearInterval(gameLoop);
@@ -180,24 +203,5 @@ function updateGameState(state: GameState) {
       return false;
     }
     return true;
-  });
-}
-
-function broadcastGameState(wss: WebSocketServer, state: GameState) {
-  // Convert Map to array before sending
-  const serializedState = {
-    players: Array.from(state.players.entries()).map(([id, player]) => ({ id, ...player })),
-    environment: state.environment
-  };
-
-  const payload = JSON.stringify(serializedState);
-  wss.clients.forEach(client => {
-    if (client.readyState === WebSocket.OPEN) {
-      try {
-        client.send(payload);
-      } catch (error) {
-        console.error("Error broadcasting state to client:", error);
-      }
-    }
   });
 }
