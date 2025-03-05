@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect, useRef } from "react";
 import { useLocation } from "wouter";
 import { GameEngine } from "@/game/engine";
 
@@ -6,8 +6,8 @@ export default function Game() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const engineRef = useRef<GameEngine | null>(null);
   const [, navigate] = useLocation();
-  const playerTag = new URLSearchParams(window.location.search).get("tag") || ""; //added to get the playerTag
-  const [playerStats, setPlayerStats] = React.useState(null); // Added state for player stats
+  const playerTag = new URLSearchParams(window.location.search).get("tag") || "";
+  const [playerStats, setPlayerStats] = React.useState(null);
 
   useEffect(() => {
     const tag = new URLSearchParams(window.location.search).get("tag");
@@ -26,8 +26,20 @@ export default function Game() {
     // Initialize game engine
     const engine = new GameEngine(canvas);
     engineRef.current = engine;
-    engine.join(tag);
-    engine.on('playerStatsUpdate', (stats) => setPlayerStats(stats)); // Listen for stats updates
+
+    // Use window event for player stats
+    const handlePlayerStats = (event: CustomEvent) => {
+      const { player } = event.detail;
+      if (player) {
+        setPlayerStats({...player, distanceWalked: player.distanceWalked})
+      }
+    };
+
+    // Add event listener for player stats
+    window.addEventListener('playerStatsUpdated', handlePlayerStats as EventListener);
+
+    // Join game with the tag
+    engine.join(tag || 'anonymous');
 
     // Handle keyboard input
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -56,9 +68,10 @@ export default function Game() {
     return () => {
       window.removeEventListener("keydown", handleKeyDown);
       window.removeEventListener("keyup", handleKeyUp);
+      window.removeEventListener('playerStatsUpdated', handlePlayerStats as EventListener);
       engine.destroy();
     };
-  }, []);
+  }, [playerTag]);
 
   return (
     <div className="h-screen w-full relative">
@@ -72,8 +85,8 @@ export default function Game() {
             <div className="flex justify-between">
               <span>Health:</span>
               <div className="w-32 h-4 bg-gray-700 rounded overflow-hidden">
-                <div 
-                  className="h-full bg-green-500" 
+                <div
+                  className="h-full bg-green-500"
                   style={{ width: `${playerStats.health}%` }}
                 />
               </div>

@@ -1,4 +1,3 @@
-
 import * as THREE from 'three';
 import { type GameState, type PlayerState, type EnvironmentObject, EntityType } from "@shared/schema";
 
@@ -52,7 +51,7 @@ export class GameRenderer {
 
   private setupLights(): THREE.Light[] {
     const lights = [];
-    
+
     // Main directional light (sun)
     const sunLight = new THREE.DirectionalLight(0xffffff, 1);
     sunLight.position.set(500, 500, 500);
@@ -66,11 +65,11 @@ export class GameRenderer {
     sunLight.shadow.camera.top = 1000;
     sunLight.shadow.camera.bottom = -1000;
     lights.push(sunLight);
-    
+
     // Ambient light to avoid complete darkness
     const ambientLight = new THREE.AmbientLight(0xcccccc, 0.4);
     lights.push(ambientLight);
-    
+
     return lights;
   }
 
@@ -80,23 +79,23 @@ export class GameRenderer {
     groundTexture.wrapS = THREE.RepeatWrapping;
     groundTexture.wrapT = THREE.RepeatWrapping;
     groundTexture.repeat.set(20, 20);
-    
+
     const groundMaterial = new THREE.MeshStandardMaterial({ 
       map: groundTexture,
       roughness: 0.8,
       metalness: 0.2
     });
-    
+
     const groundGeometry = new THREE.PlaneGeometry(this.groundSize, this.groundSize);
     const ground = new THREE.Mesh(groundGeometry, groundMaterial);
     ground.rotation.x = -Math.PI / 2; // Rotate to be horizontal
     ground.receiveShadow = true;
     this.scene.add(ground);
-    
+
     // Add some terrain variation
     this.addTerrainFeatures();
   }
-  
+
   private addTerrainFeatures() {
     // Add some hills
     for (let i = 0; i < 10; i++) {
@@ -106,13 +105,13 @@ export class GameRenderer {
         0, Math.PI * 2, 
         0, Math.PI / 2
       );
-      
+
       const hillMaterial = new THREE.MeshStandardMaterial({ 
         color: 0x7cfc00, // Light green
         roughness: 0.9,
         metalness: 0.1
       });
-      
+
       const hill = new THREE.Mesh(hillGeometry, hillMaterial);
       const x = Math.random() * this.groundSize - this.groundSize/2;
       const z = Math.random() * this.groundSize - this.groundSize/2;
@@ -121,7 +120,7 @@ export class GameRenderer {
       hill.castShadow = true;
       this.scene.add(hill);
     }
-    
+
     // Add trees
     for (let i = 0; i < 50; i++) {
       const tree = this.createTree();
@@ -131,10 +130,10 @@ export class GameRenderer {
       this.scene.add(tree);
     }
   }
-  
+
   private createTree() {
     const tree = new THREE.Group();
-    
+
     // Trunk
     const trunkGeometry = new THREE.CylinderGeometry(1, 2, 10, 8);
     const trunkMaterial = new THREE.MeshStandardMaterial({ 
@@ -145,7 +144,7 @@ export class GameRenderer {
     trunk.position.y = 5;
     trunk.castShadow = true;
     tree.add(trunk);
-    
+
     // Leaves
     const leavesGeometry = new THREE.ConeGeometry(6, 15, 8);
     const leavesMaterial = new THREE.MeshStandardMaterial({ 
@@ -156,10 +155,10 @@ export class GameRenderer {
     leaves.position.y = 15;
     leaves.castShadow = true;
     tree.add(leaves);
-    
+
     return tree;
   }
-  
+
   private createSkybox() {
     const skyGeometry = new THREE.BoxGeometry(2000, 2000, 2000);
     const skyMaterials = [
@@ -188,10 +187,10 @@ export class GameRenderer {
         side: THREE.BackSide 
       })
     ];
-    
+
     const skybox = new THREE.Mesh(skyGeometry, skyMaterials);
     this.scene.add(skybox);
-    
+
     // Add a few clouds
     for (let i = 0; i < 20; i++) {
       const cloud = this.createCloud();
@@ -202,17 +201,17 @@ export class GameRenderer {
       this.scene.add(cloud);
     }
   }
-  
+
   private createCloud() {
     const cloud = new THREE.Group();
-    
+
     const cloudMaterial = new THREE.MeshStandardMaterial({
       color: 0xffffff,
       transparent: true,
       opacity: 0.9,
       roughness: 1
     });
-    
+
     const numPuffs = Math.floor(Math.random() * 5) + 3;
     for (let i = 0; i < numPuffs; i++) {
       const puffGeometry = new THREE.SphereGeometry(
@@ -220,21 +219,21 @@ export class GameRenderer {
         8, 8
       );
       const puff = new THREE.Mesh(puffGeometry, cloudMaterial);
-      
+
       const x = Math.random() * 20 - 10;
       const y = Math.random() * 5;
       const z = Math.random() * 20 - 10;
       puff.position.set(x, y, z);
-      
+
       cloud.add(puff);
     }
-    
+
     return cloud;
   }
-  
+
   createEnvironmentObject(obj: EnvironmentObject): THREE.Object3D {
     let mesh: THREE.Object3D;
-    
+
     switch(obj.type) {
       case EntityType.FENCE:
         mesh = this.createFence(obj);
@@ -257,32 +256,32 @@ export class GameRenderer {
         const material = new THREE.MeshStandardMaterial({ color: 0xff0000 });
         mesh = new THREE.Mesh(geometry, material);
     }
-    
+
     // Set position
     mesh.position.set(obj.x - this.groundSize/2, 0, obj.y - this.groundSize/2);
     mesh.castShadow = true;
     mesh.receiveShadow = true;
-    
+
     return mesh;
   }
-  
+
   private createFence(obj: EnvironmentObject): THREE.Object3D {
     const fence = new THREE.Group();
-    
+
     // Create fence posts
     const postGeometry = new THREE.BoxGeometry(5, 25, 5);
     const postMaterial = new THREE.MeshStandardMaterial({ 
       color: 0x8b4513, // Brown
       roughness: 0.9
     });
-    
+
     // Create fence rails
     const railGeometry = new THREE.BoxGeometry(obj.width, 5, 2);
     const railMaterial = new THREE.MeshStandardMaterial({ 
       color: 0xa0522d, // Sienna
       roughness: 0.9
     });
-    
+
     // Add posts and rails
     const posts = Math.ceil(obj.width / 20);
     for (let i = 0; i < posts; i++) {
@@ -290,36 +289,36 @@ export class GameRenderer {
       post.position.set(i * 20 - obj.width/2, 12.5, 0);
       fence.add(post);
     }
-    
+
     // Add two rails
     const railTop = new THREE.Mesh(railGeometry, railMaterial);
     railTop.position.set(0, 20, 0);
     fence.add(railTop);
-    
+
     const railBottom = new THREE.Mesh(railGeometry, railMaterial);
     railBottom.position.set(0, 10, 0);
     fence.add(railBottom);
-    
+
     return fence;
   }
-  
+
   private createHayBale(obj: EnvironmentObject): THREE.Object3D {
     const hayGeometry = new THREE.CylinderGeometry(obj.width/2, obj.width/2, 30, 16);
     const hayMaterial = new THREE.MeshStandardMaterial({ 
       color: 0xf4a460, // Sandy brown
       roughness: 1
     });
-    
+
     const hay = new THREE.Mesh(hayGeometry, hayMaterial);
     hay.rotation.x = Math.PI / 2; // Lay it on its side
     hay.position.y = 15; // Half height
-    
+
     return hay;
   }
-  
+
   private createBarn(obj: EnvironmentObject): THREE.Object3D {
     const barn = new THREE.Group();
-    
+
     // Barn body
     const bodyGeometry = new THREE.BoxGeometry(obj.width, 40, obj.height);
     const bodyMaterial = new THREE.MeshStandardMaterial({ 
@@ -329,7 +328,7 @@ export class GameRenderer {
     const body = new THREE.Mesh(bodyGeometry, bodyMaterial);
     body.position.y = 20;
     barn.add(body);
-    
+
     // Barn roof
     const roofGeometry = new THREE.ConeGeometry(
       Math.sqrt(obj.width*obj.width + obj.height*obj.height)/2,
@@ -343,7 +342,7 @@ export class GameRenderer {
     roof.rotation.y = Math.PI/4; // Orient the pyramid
     roof.position.y = 40 + 10; // Position on top of the barn body
     barn.add(roof);
-    
+
     // Add a door
     const doorGeometry = new THREE.PlaneGeometry(15, 25);
     const doorMaterial = new THREE.MeshStandardMaterial({ 
@@ -355,13 +354,13 @@ export class GameRenderer {
     door.position.set(0, 12.5, obj.height/2 + 0.1); // In front of the barn
     door.rotation.y = Math.PI; // Face outward
     barn.add(door);
-    
+
     return barn;
   }
-  
+
   private createHouse(obj: EnvironmentObject): THREE.Object3D {
     const house = new THREE.Group();
-    
+
     // House body
     const bodyGeometry = new THREE.BoxGeometry(obj.width, 35, obj.height);
     const bodyMaterial = new THREE.MeshStandardMaterial({ 
@@ -371,7 +370,7 @@ export class GameRenderer {
     const body = new THREE.Mesh(bodyGeometry, bodyMaterial);
     body.position.y = 17.5;
     house.add(body);
-    
+
     // House roof
     const roofGeometry = new THREE.ConeGeometry(
       Math.sqrt(obj.width*obj.width + obj.height*obj.height)/2,
@@ -385,7 +384,7 @@ export class GameRenderer {
     roof.rotation.y = Math.PI/4; // Orient the pyramid
     roof.position.y = 35 + 12.5; // Position on top of the house body
     house.add(roof);
-    
+
     // Add a door
     const doorGeometry = new THREE.PlaneGeometry(10, 20);
     const doorMaterial = new THREE.MeshStandardMaterial({ 
@@ -397,7 +396,7 @@ export class GameRenderer {
     door.position.set(0, 10, obj.height/2 + 0.1); // In front of the house
     door.rotation.y = Math.PI; // Face outward
     house.add(door);
-    
+
     // Add windows
     const windowGeometry = new THREE.PlaneGeometry(8, 8);
     const windowMaterial = new THREE.MeshStandardMaterial({ 
@@ -406,23 +405,23 @@ export class GameRenderer {
       metalness: 0.5,
       side: THREE.DoubleSide
     });
-    
+
     const window1 = new THREE.Mesh(windowGeometry, windowMaterial);
     window1.position.set(-obj.width/4, 20, obj.height/2 + 0.1);
     window1.rotation.y = Math.PI;
     house.add(window1);
-    
+
     const window2 = new THREE.Mesh(windowGeometry, windowMaterial);
     window2.position.set(obj.width/4, 20, obj.height/2 + 0.1);
     window2.rotation.y = Math.PI;
     house.add(window2);
-    
+
     return house;
   }
-  
+
   private createCar(obj: EnvironmentObject): THREE.Object3D {
     const car = new THREE.Group();
-    
+
     // Car body
     const bodyGeometry = new THREE.BoxGeometry(obj.width, 15, obj.height);
     const bodyMaterial = new THREE.MeshStandardMaterial({ 
@@ -433,7 +432,7 @@ export class GameRenderer {
     const body = new THREE.Mesh(bodyGeometry, bodyMaterial);
     body.position.y = 10;
     car.add(body);
-    
+
     // Car top
     const topGeometry = new THREE.BoxGeometry(obj.width * 0.6, 10, obj.height * 0.7);
     const topMaterial = new THREE.MeshStandardMaterial({ 
@@ -444,160 +443,69 @@ export class GameRenderer {
     const top = new THREE.Mesh(topGeometry, topMaterial);
     top.position.set(0, 20, -obj.height * 0.1);
     car.add(top);
-    
+
     // Wheels
     const wheelGeometry = new THREE.CylinderGeometry(5, 5, 3, 16);
     const wheelMaterial = new THREE.MeshStandardMaterial({ 
       color: 0x111111, // Black
       roughness: 0.9
     });
-    
+
     const wheelFL = new THREE.Mesh(wheelGeometry, wheelMaterial);
     wheelFL.rotation.z = Math.PI / 2; // Rotate to align with car
     wheelFL.position.set(-obj.width/2 + 7, 5, -obj.height/2 + 5);
     car.add(wheelFL);
-    
+
     const wheelFR = new THREE.Mesh(wheelGeometry, wheelMaterial);
     wheelFR.rotation.z = Math.PI / 2;
     wheelFR.position.set(obj.width/2 - 7, 5, -obj.height/2 + 5);
     car.add(wheelFR);
-    
+
     const wheelBL = new THREE.Mesh(wheelGeometry, wheelMaterial);
     wheelBL.rotation.z = Math.PI / 2;
     wheelBL.position.set(-obj.width/2 + 7, 5, obj.height/2 - 5);
     car.add(wheelBL);
-    
+
     const wheelBR = new THREE.Mesh(wheelGeometry, wheelMaterial);
     wheelBR.rotation.z = Math.PI / 2;
     wheelBR.position.set(obj.width/2 - 7, 5, obj.height/2 - 5);
     car.add(wheelBR);
-    
+
     return car;
   }
-  
+
   createPlayerObject(player: PlayerState): THREE.Object3D {
-    // Create goat body
-    const goat = new THREE.Group();
-    
-    // Body
-    const bodyGeometry = new THREE.BoxGeometry(30, 20, 50);
-    const bodyMaterial = new THREE.MeshStandardMaterial({ 
-      color: 0xf5f5dc, // Beige
-      roughness: 0.8
+    const geometry = new THREE.BoxGeometry(1, 1, 1);
+    const material = new THREE.MeshStandardMaterial({ 
+      color: player.tag === 'anonymous' ? 0xaaaaaa : 0x00ff00 
     });
-    const body = new THREE.Mesh(bodyGeometry, bodyMaterial);
-    body.position.y = 15;
-    goat.add(body);
-    
-    // Head
-    const headGeometry = new THREE.BoxGeometry(20, 20, 20);
-    const headMaterial = new THREE.MeshStandardMaterial({ 
-      color: 0xf5f5dc,
-      roughness: 0.8
-    });
-    const head = new THREE.Mesh(headGeometry, headMaterial);
-    head.position.set(0, 35, -25);
-    goat.add(head);
-    
-    // Horns
-    const hornGeometry = new THREE.ConeGeometry(3, 15, 8);
-    const hornMaterial = new THREE.MeshStandardMaterial({ 
-      color: 0xa0522d, // Sienna
-      roughness: 0.9
-    });
-    
-    const hornL = new THREE.Mesh(hornGeometry, hornMaterial);
-    hornL.position.set(-8, 45, -25);
-    hornL.rotation.x = -Math.PI/4;
-    hornL.rotation.z = -Math.PI/6;
-    goat.add(hornL);
-    
-    const hornR = new THREE.Mesh(hornGeometry, hornMaterial);
-    hornR.position.set(8, 45, -25);
-    hornR.rotation.x = -Math.PI/4;
-    hornR.rotation.z = Math.PI/6;
-    goat.add(hornR);
-    
-    // Legs
-    const legGeometry = new THREE.CylinderGeometry(3, 3, 15, 8);
-    const legMaterial = new THREE.MeshStandardMaterial({ 
-      color: 0xa0522d,
-      roughness: 0.9
-    });
-    
-    const positions = [
-      [-10, 7.5, -20], // Front left
-      [10, 7.5, -20],  // Front right
-      [-10, 7.5, 15],  // Back left
-      [10, 7.5, 15]    // Back right
-    ];
-    
-    positions.forEach(pos => {
-      const leg = new THREE.Mesh(legGeometry, legMaterial);
-      leg.position.set(...pos);
-      goat.add(leg);
-    });
-    
-    // Tail
-    const tailGeometry = new THREE.CylinderGeometry(2, 0.5, 15, 8);
-    const tailMaterial = new THREE.MeshStandardMaterial({ 
-      color: 0xf5f5dc,
-      roughness: 0.8
-    });
-    const tail = new THREE.Mesh(tailGeometry, tailMaterial);
-    tail.position.set(0, 20, 30);
-    tail.rotation.x = Math.PI/4;
-    goat.add(tail);
-    
-    // Add player tag
-    const loader = new THREE.FontLoader();
-    
-    // Create a temporary text mesh with basic geometry
-    const textGeometry = new THREE.PlaneGeometry(1, 1);
-    const textMaterial = new THREE.MeshBasicMaterial({
-      color: 0xffffff,
-      transparent: true,
-      opacity: 0.9
-    });
-    const textMesh = new THREE.Mesh(textGeometry, textMaterial);
-    textMesh.position.set(0, 60, 0);
-    textMesh.scale.set(player.tag.length * 8, 10, 1);
-    goat.add(textMesh);
-    
-    // Add health bar
-    const healthBarWidth = 40;
-    const healthPercent = player.health / 100;
-    
-    const healthBarBg = new THREE.Mesh(
-      new THREE.PlaneGeometry(healthBarWidth, 5),
-      new THREE.MeshBasicMaterial({ color: 0x444444 })
-    );
-    healthBarBg.position.set(0, 50, 0);
-    goat.add(healthBarBg);
-    
-    const healthBar = new THREE.Mesh(
-      new THREE.PlaneGeometry(healthBarWidth * healthPercent, 5),
-      new THREE.MeshBasicMaterial({ color: 0x00ff00 })
-    );
-    healthBar.position.set((healthBarWidth * (healthPercent - 1)) / 2, 50, 1);
-    goat.add(healthBar);
-    
-    // Visual indicator when charging
-    if (player.isCharging) {
-      const chargeGeometry = new THREE.SphereGeometry(10, 16, 16);
-      const chargeMaterial = new THREE.MeshBasicMaterial({
-        color: 0xff0000,
-        transparent: true,
-        opacity: 0.6
-      });
-      const charge = new THREE.Mesh(chargeGeometry, chargeMaterial);
-      charge.position.set(0, 20, -35);
-      goat.add(charge);
+    const mesh = new THREE.Mesh(geometry, material);
+
+    // Instead of text, use a sprite for the player tag
+    const canvas = document.createElement('canvas');
+    const context = canvas.getContext('2d');
+    canvas.width = 256;
+    canvas.height = 64;
+
+    if (context) {
+      context.fillStyle = 'rgba(0, 0, 0, 0.5)';
+      context.fillRect(0, 0, canvas.width, canvas.height);
+      context.font = '24px Arial';
+      context.fillStyle = 'white';
+      context.textAlign = 'center';
+      context.fillText(player.tag || 'unknown', canvas.width / 2, canvas.height / 2 + 8);
+
+      const texture = new THREE.CanvasTexture(canvas);
+      const spriteMaterial = new THREE.SpriteMaterial({ map: texture });
+      const sprite = new THREE.Sprite(spriteMaterial);
+      sprite.position.set(0, 1.2, 0);
+      sprite.scale.set(1, 0.25, 1);
+      mesh.add(sprite);
     }
-    
-    return goat;
+
+    return mesh;
   }
-  
+
   updateCamera(playerId: string, state: GameState) {
     // Find the player in the state
     const players = Array.isArray(state.players) 
@@ -605,14 +513,14 @@ export class GameRenderer {
       : state.players instanceof Map
         ? Array.from(state.players.values())
         : [];
-    
+
     const player = players.find(p => p.id === playerId);
-    
+
     if (player) {
       // Position camera behind and above the player
       const targetX = player.x - this.groundSize/2;
       const targetZ = player.y - this.groundSize/2;
-      
+
       // Smooth camera follow
       this.camera.position.x = targetX;
       this.camera.position.z = targetZ + 100;
@@ -620,17 +528,17 @@ export class GameRenderer {
       this.camera.lookAt(targetX, 0, targetZ);
     }
   }
-  
+
   render(state: GameState) {
-    if (!state) return;
-    
     try {
+      if (!this.scene || !this.camera || !this.renderer) return;
+
       // Clear existing models
       this.models.forEach((model, id) => {
         this.scene.remove(model);
       });
       this.models.clear();
-      
+
       // Find the current player (first in list for now)
       let currentPlayerId = "";
       if (Array.isArray(state.players) && state.players.length > 0) {
@@ -638,30 +546,38 @@ export class GameRenderer {
       } else if (state.players instanceof Map && state.players.size > 0) {
         currentPlayerId = Array.from(state.players.keys())[0];
       }
-      
+
       // Update camera to follow current player
       this.updateCamera(currentPlayerId, state);
-      
+
       // Render players
       const players = Array.isArray(state.players) 
         ? state.players
         : Array.from(state.players.values());
-      
+
       players.forEach(player => {
-        const model = this.createPlayerObject(player);
-        this.models.set(`player-${player.id}`, model);
-        this.scene.add(model);
+        try {
+          const model = this.createPlayerObject(player);
+          this.models.set(`player-${player.id}`, model);
+          this.scene.add(model);
+        } catch (error) {
+          console.warn('Error creating player object:', error);
+        }
       });
-      
+
       // Render environment objects
       if (Array.isArray(state.environment)) {
         state.environment.forEach(obj => {
-          const model = this.createEnvironmentObject(obj);
-          this.models.set(`env-${obj.id}`, model);
-          this.scene.add(model);
+          try {
+            const model = this.createEnvironmentObject(obj);
+            this.models.set(`env-${obj.id}`, model);
+            this.scene.add(model);
+          } catch (error) {
+            console.warn('Error creating environment object:', error);
+          }
         });
       }
-      
+
       // Render the scene
       this.renderer.render(this.scene, this.camera);
     } catch (error) {
