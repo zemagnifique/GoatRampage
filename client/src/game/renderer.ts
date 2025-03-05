@@ -6,7 +6,7 @@ export class GameRenderer {
   private camera: THREE.PerspectiveCamera;
   private renderer?: THREE.WebGLRenderer;
   private fallbackCtx?: CanvasRenderingContext2D;
-  private models: Map<string, THREE.Object3D>;
+  private models: Map<string, THREE.Object3D> = new Map();
   private lights: THREE.Light[];
   private textureLoader: THREE.TextureLoader;
   private groundSize = 5000;
@@ -742,10 +742,12 @@ export class GameRenderer {
       if (!this.renderer && !this.fallbackCtx) return;
 
       // Clear existing models
-      this.models.forEach((model, id) => {
-        this.scene.remove(model);
-      });
-      this.models.clear();
+      if (this.models) {
+        this.models.forEach((model, id) => {
+          this.scene.remove(model);
+        });
+        this.models.clear();
+      }
 
       // Find the current player (first in list for now)
       let currentPlayerId = "";
