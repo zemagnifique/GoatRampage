@@ -239,4 +239,4 @@ export class GameEngine {
   }
 }
 
-export { GameEngine };
+// Export is already done at the class declaration
