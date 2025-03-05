@@ -1,0 +1,36 @@
+client:536 WebSocket connection to 'wss://74e23b14-7631-4cb4-93b4-e5a3b9d81be7-00-2x9skgyra46xs.spock.replit.dev/?token=hdgXSSZhCjyL' failed: 
+
+client:536 Uncaught (in promise) SyntaxError: Failed to construct 'WebSocket': The URL 'wss://localhost:undefined/?token=hdgXSSZhCjyL' is invalid.
+    at setupWebSocket (client:536:19)
+    at fallback (client:509:16)
+    at WebSocket.<anonymous> (client:555:7)
+chunk-RPCDYKBN.js?v=5a8e048a:21551 Download the React DevTools for a better development experience: https://reactjs.org/link/react-devtools
+engine.ts:27 Attempting to connect to WebSocket at: wss://74e23b14-7631-4cb4-93b4-e5a3b9d81be7-00-2x9skgyra46xs.spock.replit.dev/game-ws
+engine.ts:100 Attempting to join game with tag: test
+engine.ts:85 WebSocket not ready, waiting for connection...
+chunk-RPCDYKBN.js?v=5a8e048a:16670 Uncaught TypeError: engine.on is not a function
+    at game.tsx:30:12
+chunk-RPCDYKBN.js?v=5a8e048a:14032 The above error occurred in the <Game> component:
+
+    at Game (https://74e23b14-7631-4cb4-93b4-e5a3b9d81be7-00-2x9skgyra46xs.spock.replit.dev/src/pages/game.tsx:23:21)
+    at Route (https://74e23b14-7631-4cb4-93b4-e5a3b9d81be7-00-2x9skgyra46xs.spock.replit.…/home/runner/workspace/node_modules/.vite/deps/wouter.js?v=5a8e048a:323:16)
+    at Switch (https://74e23b14-7631-4cb4-93b4-e5a3b9d81be7-00-2x9skgyra46xs.spock.replit.…/home/runner/workspace/node_modules/.vite/deps/wouter.js?v=5a8e048a:379:17)
+    at Router
+    at QueryClientProvider (https://74e23b14-7631-4cb4-93b4-e5a3b9d81be7-00-2x9skgyra46xs.spock.replit.…rkspace/node_modules/.vite/deps/@tanstack_react-query.js?v=5a8e048a:2805:3)
+    at App
+
+Consider adding an error boundary to your tree to customize error handling behavior.
+Visit https://reactjs.org/link/error-boundaries to learn more about error boundaries.
+chunk-RPCDYKBN.js?v=5a8e048a:9129 Uncaught TypeError: engine.on is not a function
+    at game.tsx:30:12
+engine.ts:33 WebSocket connection established
+1089
+renderer.ts:668 Error rendering scene: TypeError: THREE.FontLoader is not a constructor
+    at GameRenderer.createPlayerObject (renderer.ts:553:20)
+    at renderer.ts:651:28
+    at Array.forEach (<anonymous>)
+    at GameRenderer.render (renderer.ts:650:15)
+    at GameEngine.update (engine.ts:120:21)
+    at socket.onmessage (engine.ts:73:16)
+﻿
+
