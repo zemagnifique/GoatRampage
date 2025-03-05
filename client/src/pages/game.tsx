@@ -4,6 +4,7 @@ import { GameEngine } from "@/game/engine";
 
 export default function Game() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const canvasContainerRef = useRef<HTMLDivElement>(null);
   const engineRef = useRef<GameEngine | null>(null);
   const [, navigate] = useLocation();
   const playerTag = new URLSearchParams(window.location.search).get("tag") || "";
@@ -24,8 +25,9 @@ export default function Game() {
     canvas.height = window.innerHeight;
 
     // Initialize game engine with better error handling
+    let engine; // Declare engine at the useEffect scope level
     try {
-      const engine = new GameEngine(canvas);
+      engine = new GameEngine(canvas);
       engineRef.current = engine;
     } catch (error) {
       console.error("Failed to initialize game engine:", error);
@@ -137,7 +139,7 @@ export default function Game() {
   }, [playerTag]);
 
   return (
-    <div className="h-screen w-full relative">
+    <div className="h-screen w-full relative" ref={canvasContainerRef}>
       <canvas ref={canvasRef} className="w-full h-full" />
       <div className="absolute bottom-4 left-4 bg-black/50 p-3 rounded text-white text-sm">
         <h3 className="font-bold mb-1">Controls:</h3>
