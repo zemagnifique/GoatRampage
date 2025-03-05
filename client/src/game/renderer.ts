@@ -6,8 +6,8 @@ export class GameRenderer {
   private camera: THREE.PerspectiveCamera;
   private renderer?: THREE.WebGLRenderer;
   private fallbackCtx?: CanvasRenderingContext2D;
-  private models: Map<string, THREE.Object3D> = new Map();
-  private lights: THREE.Light[];
+  private models = new Map<string, THREE.Object3D>();
+  private lights: THREE.Light[] = [];
   private textureLoader: THREE.TextureLoader;
   private groundSize = 5000;
 
