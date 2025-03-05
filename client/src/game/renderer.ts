@@ -8,7 +8,7 @@ export class GameRenderer {
   private models: Map<string, THREE.Object3D>;
   private lights: THREE.Light[];
   private textureLoader: THREE.TextureLoader;
-  private groundSize = 2000;
+  private groundSize = 5000;
 
   constructor(private canvas: HTMLCanvasElement) {
     // Initialize Three.js scene
@@ -97,8 +97,8 @@ export class GameRenderer {
   }
 
   private addTerrainFeatures() {
-    // Add some hills
-    for (let i = 0; i < 10; i++) {
+    // Farm section with hills
+    for (let i = 0; i < 15; i++) {
       const hillGeometry = new THREE.SphereGeometry(
         Math.random() * 30 + 20, 
         16, 16, 
@@ -113,22 +113,167 @@ export class GameRenderer {
       });
 
       const hill = new THREE.Mesh(hillGeometry, hillMaterial);
+      // Place hills in the farm area (lower half of the map)
       const x = Math.random() * this.groundSize - this.groundSize/2;
-      const z = Math.random() * this.groundSize - this.groundSize/2;
+      const z = Math.random() * (this.groundSize/2) - this.groundSize/2;
       hill.position.set(x, -5, z); // Slightly below ground to smooth transition
       hill.receiveShadow = true;
       hill.castShadow = true;
       this.scene.add(hill);
     }
 
-    // Add trees
-    for (let i = 0; i < 50; i++) {
+    // Add trees in farm area
+    for (let i = 0; i < 80; i++) {
       const tree = this.createTree();
       const x = Math.random() * this.groundSize - this.groundSize/2;
-      const z = Math.random() * this.groundSize - this.groundSize/2;
+      const z = Math.random() * (this.groundSize/2) - this.groundSize/2;
       tree.position.set(x, 0, z);
       this.scene.add(tree);
     }
+    
+    // Add city in the distance (upper half of the map)
+    this.createCity();
+  }
+  
+  private createCity() {
+    // Create a grid of buildings
+    const cityCenter = new THREE.Vector3(0, 0, this.groundSize/4);
+    const citySize = 1000;
+    const gridSize = 8;
+    const spacing = citySize / gridSize;
+    
+    // Create roads
+    const roadMaterial = new THREE.MeshStandardMaterial({
+      color: 0x333333,
+      roughness: 0.9
+    });
+    
+    // Main roads
+    for (let i = 0; i < gridSize + 1; i++) {
+      // Horizontal roads
+      const hRoadGeometry = new THREE.BoxGeometry(citySize, 1, 20);
+      const hRoad = new THREE.Mesh(hRoadGeometry, roadMaterial);
+      hRoad.position.set(
+        cityCenter.x, 
+        0.5, 
+        cityCenter.z - citySize/2 + i * spacing
+      );
+      this.scene.add(hRoad);
+      
+      // Vertical roads
+      const vRoadGeometry = new THREE.BoxGeometry(20, 1, citySize);
+      const vRoad = new THREE.Mesh(vRoadGeometry, roadMaterial);
+      vRoad.position.set(
+        cityCenter.x - citySize/2 + i * spacing, 
+        0.5, 
+        cityCenter.z
+      );
+      this.scene.add(vRoad);
+    }
+    
+    // Buildings
+    for (let i = 0; i < gridSize; i++) {
+      for (let j = 0; j < gridSize; j++) {
+        if (Math.random() > 0.2) { // 80% chance to place a building
+          const buildingSize = spacing * 0.8;
+          const height = Math.random() * 100 + 50;
+          
+          const buildingGeometry = new THREE.BoxGeometry(
+            buildingSize, 
+            height, 
+            buildingSize
+          );
+          
+          // Random building color
+          const colors = [0x888888, 0x8899AA, 0x7788AA, 0x99AACC];
+          const color = colors[Math.floor(Math.random() * colors.length)];
+          
+          const buildingMaterial = new THREE.MeshStandardMaterial({
+            color: color,
+            roughness: 0.7,
+            metalness: Math.random() * 0.5
+          });
+          
+          const building = new THREE.Mesh(buildingGeometry, buildingMaterial);
+          
+          // Position in grid
+          building.position.set(
+            cityCenter.x - citySize/2 + spacing/2 + i * spacing,
+            height/2,
+            cityCenter.z - citySize/2 + spacing/2 + j * spacing
+          );
+          
+          building.castShadow = true;
+          building.receiveShadow = true;
+          this.scene.add(building);
+          
+          // Add windows
+          this.addWindowsToBuilding(building, height);
+        }
+      }
+    }
+  }
+  
+  private addWindowsToBuilding(building: THREE.Mesh, height: number) {
+    const windowMaterial = new THREE.MeshStandardMaterial({
+      color: 0xffffaa,
+      emissive: 0x555533,
+      roughness: 0.5,
+      metalness: 0.8
+    });
+    
+    const size = 3;
+    const spacing = 10;
+    const windowGeometry = new THREE.BoxGeometry(size, size, 1);
+    
+    // Calculate dimensions from the building
+    const buildingWidth = (building.geometry as THREE.BoxGeometry).parameters.width;
+    const buildingDepth = (building.geometry as THREE.BoxGeometry).parameters.depth;
+    
+    // Place windows on each side of the building
+    const sides = [
+      {axis: 'z', value: buildingDepth/2 + 0.1, width: buildingWidth, height: height},
+      {axis: 'z', value: -buildingDepth/2 - 0.1, width: buildingWidth, height: height},
+      {axis: 'x', value: buildingWidth/2 + 0.1, width: buildingDepth, height: height},
+      {axis: 'x', value: -buildingWidth/2 - 0.1, width: buildingDepth, height: height}
+    ];
+    
+    sides.forEach(side => {
+      const windowsPerRow = Math.floor(side.width / spacing) - 1;
+      const rows = Math.floor(side.height / spacing) - 1;
+      
+      for (let row = 1; row <= rows; row++) {
+        for (let col = 1; col <= windowsPerRow; col++) {
+          // Random chance to add a window (some will be dark)
+          if (Math.random() > 0.3) {
+            const window = new THREE.Mesh(windowGeometry, windowMaterial);
+            
+            const xPos = side.axis === 'x' ? 
+              side.value : 
+              -side.width/2 + col * spacing;
+              
+            const zPos = side.axis === 'z' ? 
+              side.value : 
+              -side.width/2 + col * spacing;
+              
+            window.position.set(
+              xPos,
+              -side.height/2 + row * spacing,
+              zPos
+            );
+            
+            // Rotate window to face outward
+            if (side.axis === 'x') {
+              window.rotation.y = side.value > 0 ? Math.PI/2 : -Math.PI/2;
+            } else {
+              window.rotation.y = side.value > 0 ? 0 : Math.PI;
+            }
+            
+            building.add(window);
+          }
+        }
+      }
+    });
   }
 
   private createTree() {
@@ -475,13 +620,57 @@ export class GameRenderer {
   }
 
   createPlayerObject(player: PlayerState): THREE.Object3D {
-    const geometry = new THREE.BoxGeometry(1, 1, 1);
-    const material = new THREE.MeshStandardMaterial({ 
-      color: player.tag === 'anonymous' ? 0xaaaaaa : 0x00ff00 
+    // Create player model (goat-like character)
+    const playerGroup = new THREE.Group();
+    
+    // Body
+    const bodyGeometry = new THREE.BoxGeometry(15, 10, 25);
+    const bodyMaterial = new THREE.MeshStandardMaterial({ 
+      color: player.tag === 'anonymous' ? 0xaaaaaa : 0xDDDDDD
     });
-    const mesh = new THREE.Mesh(geometry, material);
-
-    // Instead of text, use a sprite for the player tag
+    const body = new THREE.Mesh(bodyGeometry, bodyMaterial);
+    body.position.y = 10;
+    playerGroup.add(body);
+    
+    // Head
+    const headGeometry = new THREE.BoxGeometry(10, 10, 12);
+    const headMaterial = new THREE.MeshStandardMaterial({ color: 0xEEEEEE });
+    const head = new THREE.Mesh(headGeometry, headMaterial);
+    head.position.set(0, 20, -8);
+    playerGroup.add(head);
+    
+    // Horns
+    const hornGeometry = new THREE.ConeGeometry(2, 8, 8);
+    const hornMaterial = new THREE.MeshStandardMaterial({ color: 0x888888 });
+    
+    const leftHorn = new THREE.Mesh(hornGeometry, hornMaterial);
+    leftHorn.position.set(-4, 25, -8);
+    leftHorn.rotation.x = -Math.PI / 4;
+    playerGroup.add(leftHorn);
+    
+    const rightHorn = new THREE.Mesh(hornGeometry, hornMaterial);
+    rightHorn.position.set(4, 25, -8);
+    rightHorn.rotation.x = -Math.PI / 4;
+    playerGroup.add(rightHorn);
+    
+    // Legs
+    const legGeometry = new THREE.BoxGeometry(3, 10, 3);
+    const legMaterial = new THREE.MeshStandardMaterial({ color: 0xCCCCCC });
+    
+    const positions = [
+      [-5, 5, -8], // Front left
+      [5, 5, -8],  // Front right
+      [-5, 5, 8],  // Back left
+      [5, 5, 8]    // Back right
+    ];
+    
+    positions.forEach(pos => {
+      const leg = new THREE.Mesh(legGeometry, legMaterial);
+      leg.position.set(...pos);
+      playerGroup.add(leg);
+    });
+    
+    // Player nametag - use sprite instead of text
     const canvas = document.createElement('canvas');
     const context = canvas.getContext('2d');
     canvas.width = 256;
@@ -517,15 +706,26 @@ export class GameRenderer {
     const player = players.find(p => p.id === playerId);
 
     if (player) {
-      // Position camera behind and above the player
+      // Position camera behind and above the player for third person view
       const targetX = player.x - this.groundSize/2;
       const targetZ = player.y - this.groundSize/2;
-
-      // Smooth camera follow
-      this.camera.position.x = targetX;
-      this.camera.position.z = targetZ + 100;
-      this.camera.position.y = 70;
-      this.camera.lookAt(targetX, 0, targetZ);
+      
+      // Calculate camera position based on player rotation/direction
+      const playerRotation = player.rotation || 0;
+      const distance = 50; // Distance behind player
+      const height = 40;   // Height above player
+      
+      // Calculate camera position
+      const cameraX = targetX - Math.sin(playerRotation) * distance;
+      const cameraZ = targetZ - Math.cos(playerRotation) * distance;
+      
+      // Smoothly move camera
+      this.camera.position.x = cameraX;
+      this.camera.position.z = cameraZ;
+      this.camera.position.y = height;
+      
+      // Look at player
+      this.camera.lookAt(targetX, 15, targetZ);
     }
   }
 

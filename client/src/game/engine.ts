@@ -12,6 +12,7 @@ export class GameEngine {
   private connectionAttempts: number = 0;
   private readonly MAX_RECONNECT_ATTEMPTS = 5;
   private readonly RECONNECT_DELAY = 1000;
+  private eventListeners: Map<string, Function[]> = new Map();
 
   constructor(canvas: HTMLCanvasElement) {
     this.physics = new PhysicsEngine();
@@ -23,6 +24,9 @@ export class GameEngine {
     const wsProtocol = window.location.protocol === "https:" ? "wss:" : "ws:";
     const wsHost = window.location.host;
     const wsUrl = `${wsProtocol}//${wsHost}/game-ws`;
+    
+    // Set up movement tracking
+    this.setupMovementHandling();
 
     console.log("Attempting to connect to WebSocket at:", wsUrl);
 
@@ -96,6 +100,70 @@ export class GameEngine {
     }
   }
 
+  private setupMovementHandling() {
+    // Track movement state
+    const movementState = {
+      forward: false,
+      backward: false,
+      left: false,
+      right: false,
+      jumping: false,
+      direction: 0 // Rotation in radians
+    };
+    
+    // Listen for movement events
+    this.on("move", ({ direction, active }) => {
+      movementState[direction] = active;
+      
+      // Send movement updates to server
+      this.sendMovementUpdate(movementState);
+    });
+    
+    // Listen for jump events
+    this.on("jump", (active) => {
+      movementState.jumping = active;
+      this.sendEvent({ type: 'jump', active });
+    });
+    
+    // Set up continuous movement updates
+    setInterval(() => {
+      if (movementState.forward || movementState.backward || 
+          movementState.left || movementState.right) {
+        this.sendMovementUpdate(movementState);
+      }
+    }, 50); // Send updates every 50ms when moving
+  }
+  
+  private sendMovementUpdate(movementState) {
+    // Calculate direction and movement
+    let x = 0;
+    let y = 0;
+    let rotation = 0;
+    
+    if (movementState.forward) y -= 1;
+    if (movementState.backward) y += 1;
+    if (movementState.left) {
+      x -= 1;
+      rotation -= 0.05;
+    }
+    if (movementState.right) {
+      x += 1;
+      rotation += 0.05;
+    }
+    
+    // Normalize diagonal movement
+    if (x !== 0 && y !== 0) {
+      const magnitude = Math.sqrt(x*x + y*y);
+      x /= magnitude;
+      y /= magnitude;
+    }
+    
+    // Send the movement event
+    if (x !== 0 || y !== 0 || rotation !== 0) {
+      this.sendEvent({ type: 'move', x, y, rotation });
+    }
+  }
+
   join(tag: string) {
     console.log("Attempting to join game with tag:", tag);
     const event: GameEvent = { type: 'join', tag };
@@ -139,6 +207,28 @@ export class GameEngine {
     }
   }
 
+  on(event: string, callback: Function) {
+    if (!this.eventListeners.has(event)) {
+      this.eventListeners.set(event, []);
+    }
+    this.eventListeners.get(event)?.push(callback);
+  }
+
+  off(event: string, callback: Function) {
+    if (!this.eventListeners.has(event)) return;
+    const callbacks = this.eventListeners.get(event) || [];
+    this.eventListeners.set(
+      event,
+      callbacks.filter(cb => cb !== callback)
+    );
+  }
+
+  emit(event: string, ...args: any[]) {
+    if (!this.eventListeners.has(event)) return;
+    const callbacks = this.eventListeners.get(event) || [];
+    callbacks.forEach(callback => callback(...args));
+  }
+
   destroy() {
     if (this.socket.readyState === WebSocket.OPEN) {
       const event: GameEvent = { type: 'leave' };
@@ -148,3 +238,5 @@ export class GameEngine {
     this.renderer.dispose();
   }
 }
+
+export { GameEngine };

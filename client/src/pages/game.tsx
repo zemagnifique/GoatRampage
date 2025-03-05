@@ -43,22 +43,60 @@ export default function Game() {
 
     // Handle keyboard input
     const handleKeyDown = (e: KeyboardEvent) => {
-      switch (e.key) {
+      switch (e.key.toLowerCase()) {
         case " ":
+          // Jump
+          engine.emit("jump", true);
+          break;
+        case "shift":
+          // Charge
           engine.charge(true);
           break;
-        case "ArrowLeft":
-        case "ArrowRight":
-        case "ArrowUp":
-        case "ArrowDown":
-          // Handle movement
+        case "w":
+          // Move forward
+          engine.emit("move", { direction: "forward", active: true });
+          break;
+        case "s":
+          // Move backward
+          engine.emit("move", { direction: "backward", active: true });
+          break;
+        case "a":
+          // Move left
+          engine.emit("move", { direction: "left", active: true });
+          break;
+        case "d":
+          // Move right
+          engine.emit("move", { direction: "right", active: true });
           break;
       }
     };
 
     const handleKeyUp = (e: KeyboardEvent) => {
-      if (e.key === " ") {
-        engine.charge(false);
+      switch (e.key.toLowerCase()) {
+        case " ":
+          // Stop jumping
+          engine.emit("jump", false);
+          break;
+        case "shift":
+          // Stop charging
+          engine.charge(false);
+          break;
+        case "w":
+          // Stop moving forward
+          engine.emit("move", { direction: "forward", active: false });
+          break;
+        case "s":
+          // Stop moving backward
+          engine.emit("move", { direction: "backward", active: false });
+          break;
+        case "a":
+          // Stop moving left
+          engine.emit("move", { direction: "left", active: false });
+          break;
+        case "d":
+          // Stop moving right
+          engine.emit("move", { direction: "right", active: false });
+          break;
       }
     };
 
@@ -76,6 +114,14 @@ export default function Game() {
   return (
     <div className="h-screen w-full relative">
       <canvas ref={canvasRef} className="w-full h-full" />
+      <div className="absolute bottom-4 left-4 bg-black/50 p-3 rounded text-white text-sm">
+        <h3 className="font-bold mb-1">Controls:</h3>
+        <ul className="space-y-1">
+          <li>W/A/S/D - Movement</li>
+          <li>Space - Jump</li>
+          <li>Shift - Charge</li>
+        </ul>
+      </div>
 
       {/* Player stats UI */}
       <div className="absolute top-4 left-4 bg-black/50 p-4 rounded-lg text-white">
