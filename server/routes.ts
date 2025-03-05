@@ -178,7 +178,13 @@ function updateGameState(state: GameState) {
 }
 
 function broadcastGameState(wss: WebSocketServer, state: GameState) {
-  const payload = JSON.stringify(state);
+  // Convert Map to array before sending
+  const serializedState = {
+    players: Array.from(state.players.entries()).map(([id, player]) => ({ id, ...player })),
+    environment: state.environment
+  };
+
+  const payload = JSON.stringify(serializedState);
   wss.clients.forEach(client => {
     if (client.readyState === WebSocket.OPEN) {
       try {

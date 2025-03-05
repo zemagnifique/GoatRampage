@@ -58,7 +58,13 @@ export class GameEngine {
           return;
         }
 
-        this.state = data;
+        // Convert array back to Map
+        const players = new Map(data.players.map(player => [player.id, player]));
+        this.state = {
+          players,
+          environment: data.environment
+        };
+
         this.update();
       } catch (error) {
         console.error("Error parsing game state:", error);
