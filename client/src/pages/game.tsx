@@ -23,24 +23,32 @@ export default function Game() {
     canvas.width = window.innerWidth;
     canvas.height = window.innerHeight;
 
-    // Initialize game engine with error handling
+    // Initialize game engine with better error handling
     try {
       const engine = new GameEngine(canvas);
       engineRef.current = engine;
     } catch (error) {
       console.error("Failed to initialize game engine:", error);
-      // Draw error message on canvas directly
-      const ctx = canvas.getContext('2d');
-      if (ctx) {
-        ctx.fillStyle = '#87ceeb';
-        ctx.fillRect(0, 0, canvas.width, canvas.height);
-        ctx.font = '20px Arial';
-        ctx.fillStyle = 'white';
-        ctx.textAlign = 'center';
-        ctx.fillText('Cannot initialize 3D game engine', canvas.width / 2, canvas.height / 2);
-        ctx.fillText('WebGL not supported in this environment', canvas.width / 2, canvas.height / 2 + 30);
-        ctx.fillText('Please try a different browser or device', canvas.width / 2, canvas.height / 2 + 60);
-      }
+      
+      // Add a user-friendly message to the page
+      const errorDiv = document.createElement('div');
+      errorDiv.style.position = 'absolute';
+      errorDiv.style.top = '10px';
+      errorDiv.style.left = '10px';
+      errorDiv.style.padding = '10px';
+      errorDiv.style.backgroundColor = 'rgba(255,0,0,0.7)';
+      errorDiv.style.color = 'white';
+      errorDiv.style.borderRadius = '5px';
+      errorDiv.style.zIndex = '1000';
+      errorDiv.innerHTML = `
+        <h3>WebGL Not Available</h3>
+        <p>This game requires WebGL which is not available in your current environment.</p>
+        <p>Try opening this app in a new tab by clicking the "Open in new tab" button in the upper right.</p>
+      `;
+      
+      canvasContainerRef.current?.appendChild(errorDiv);
+      
+      // Canvas error message is handled in the renderer
       return;
     }
 

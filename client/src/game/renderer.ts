@@ -4,7 +4,8 @@ import { type GameState, type PlayerState, type EnvironmentObject, EntityType } 
 export class GameRenderer {
   private scene: THREE.Scene;
   private camera: THREE.PerspectiveCamera;
-  private renderer: THREE.WebGLRenderer;
+  private renderer?: THREE.WebGLRenderer;
+  private fallbackCtx?: CanvasRenderingContext2D;
   private models: Map<string, THREE.Object3D>;
   private lights: THREE.Light[];
   private textureLoader: THREE.TextureLoader;
@@ -29,23 +30,12 @@ export class GameRenderer {
       console.log("Using WebGL renderer");
     } catch (e) {
       console.warn("WebGL not available, falling back to CanvasRenderer", e);
-      // Create a simple 2D canvas as fallback
-      const ctx = canvas.getContext('2d');
-      if (ctx) {
-        ctx.fillStyle = '#87ceeb';
-        ctx.fillRect(0, 0, canvas.width, canvas.height);
-        ctx.font = '20px Arial';
-        ctx.fillStyle = 'white';
-        ctx.textAlign = 'center';
-        ctx.fillText('WebGL not supported in this environment', canvas.width / 2, canvas.height / 2);
-        ctx.fillText('Please try a different browser or device', canvas.width / 2, canvas.height / 2 + 30);
-      }
-      throw new Error("WebGL not supported in this environment");
+      this.createFallbackRenderer(canvas);
     }
-    
-    this.renderer.setSize(window.innerWidth, window.innerHeight);
-    this.renderer.shadowMap.enabled = true;
-    this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+
+    this.renderer?.setSize(window.innerWidth, window.innerHeight);
+    this.renderer?.shadowMap.enabled = true;
+    this.renderer?.shadowMap.type = THREE.PCFSoftShadowMap;
 
     // Initialize model storage
     this.models = new Map();
@@ -63,7 +53,7 @@ export class GameRenderer {
     window.addEventListener('resize', () => {
       this.camera.aspect = window.innerWidth / window.innerHeight;
       this.camera.updateProjectionMatrix();
-      this.renderer.setSize(window.innerWidth, window.innerHeight);
+      this.renderer?.setSize(window.innerWidth, window.innerHeight);
     });
   }
 
@@ -148,24 +138,24 @@ export class GameRenderer {
       tree.position.set(x, 0, z);
       this.scene.add(tree);
     }
-    
+
     // Add city in the distance (upper half of the map)
     this.createCity();
   }
-  
+
   private createCity() {
     // Create a grid of buildings
     const cityCenter = new THREE.Vector3(0, 0, this.groundSize/4);
     const citySize = 1000;
     const gridSize = 8;
     const spacing = citySize / gridSize;
-    
+
     // Create roads
     const roadMaterial = new THREE.MeshStandardMaterial({
       color: 0x333333,
       roughness: 0.9
     });
-    
+
     // Main roads
     for (let i = 0; i < gridSize + 1; i++) {
       // Horizontal roads
@@ -177,7 +167,7 @@ export class GameRenderer {
         cityCenter.z - citySize/2 + i * spacing
       );
       this.scene.add(hRoad);
-      
+
       // Vertical roads
       const vRoadGeometry = new THREE.BoxGeometry(20, 1, citySize);
       const vRoad = new THREE.Mesh(vRoadGeometry, roadMaterial);
@@ -188,50 +178,50 @@ export class GameRenderer {
       );
       this.scene.add(vRoad);
     }
-    
+
     // Buildings
     for (let i = 0; i < gridSize; i++) {
       for (let j = 0; j < gridSize; j++) {
         if (Math.random() > 0.2) { // 80% chance to place a building
           const buildingSize = spacing * 0.8;
           const height = Math.random() * 100 + 50;
-          
+
           const buildingGeometry = new THREE.BoxGeometry(
             buildingSize, 
             height, 
             buildingSize
           );
-          
+
           // Random building color
           const colors = [0x888888, 0x8899AA, 0x7788AA, 0x99AACC];
           const color = colors[Math.floor(Math.random() * colors.length)];
-          
+
           const buildingMaterial = new THREE.MeshStandardMaterial({
             color: color,
             roughness: 0.7,
             metalness: Math.random() * 0.5
           });
-          
+
           const building = new THREE.Mesh(buildingGeometry, buildingMaterial);
-          
+
           // Position in grid
           building.position.set(
             cityCenter.x - citySize/2 + spacing/2 + i * spacing,
             height/2,
             cityCenter.z - citySize/2 + spacing/2 + j * spacing
           );
-          
+
           building.castShadow = true;
           building.receiveShadow = true;
           this.scene.add(building);
-          
+
           // Add windows
           this.addWindowsToBuilding(building, height);
         }
       }
     }
   }
-  
+
   private addWindowsToBuilding(building: THREE.Mesh, height: number) {
     const windowMaterial = new THREE.MeshStandardMaterial({
       color: 0xffffaa,
@@ -239,15 +229,15 @@ export class GameRenderer {
       roughness: 0.5,
       metalness: 0.8
     });
-    
+
     const size = 3;
     const spacing = 10;
     const windowGeometry = new THREE.BoxGeometry(size, size, 1);
-    
+
     // Calculate dimensions from the building
     const buildingWidth = (building.geometry as THREE.BoxGeometry).parameters.width;
     const buildingDepth = (building.geometry as THREE.BoxGeometry).parameters.depth;
-    
+
     // Place windows on each side of the building
     const sides = [
       {axis: 'z', value: buildingDepth/2 + 0.1, width: buildingWidth, height: height},
@@ -255,38 +245,38 @@ export class GameRenderer {
       {axis: 'x', value: buildingWidth/2 + 0.1, width: buildingDepth, height: height},
       {axis: 'x', value: -buildingWidth/2 - 0.1, width: buildingDepth, height: height}
     ];
-    
+
     sides.forEach(side => {
       const windowsPerRow = Math.floor(side.width / spacing) - 1;
       const rows = Math.floor(side.height / spacing) - 1;
-      
+
       for (let row = 1; row <= rows; row++) {
         for (let col = 1; col <= windowsPerRow; col++) {
           // Random chance to add a window (some will be dark)
           if (Math.random() > 0.3) {
             const window = new THREE.Mesh(windowGeometry, windowMaterial);
-            
+
             const xPos = side.axis === 'x' ? 
               side.value : 
               -side.width/2 + col * spacing;
-              
+
             const zPos = side.axis === 'z' ? 
               side.value : 
               -side.width/2 + col * spacing;
-              
+
             window.position.set(
               xPos,
               -side.height/2 + row * spacing,
               zPos
             );
-            
+
             // Rotate window to face outward
             if (side.axis === 'x') {
               window.rotation.y = side.value > 0 ? Math.PI/2 : -Math.PI/2;
             } else {
               window.rotation.y = side.value > 0 ? 0 : Math.PI;
             }
-            
+
             building.add(window);
           }
         }
@@ -640,7 +630,7 @@ export class GameRenderer {
   createPlayerObject(player: PlayerState): THREE.Object3D {
     // Create player model (goat-like character)
     const playerGroup = new THREE.Group();
-    
+
     // Body
     const bodyGeometry = new THREE.BoxGeometry(15, 10, 25);
     const bodyMaterial = new THREE.MeshStandardMaterial({ 
@@ -649,45 +639,45 @@ export class GameRenderer {
     const body = new THREE.Mesh(bodyGeometry, bodyMaterial);
     body.position.y = 10;
     playerGroup.add(body);
-    
+
     // Head
     const headGeometry = new THREE.BoxGeometry(10, 10, 12);
     const headMaterial = new THREE.MeshStandardMaterial({ color: 0xEEEEEE });
     const head = new THREE.Mesh(headGeometry, headMaterial);
     head.position.set(0, 20, -8);
     playerGroup.add(head);
-    
+
     // Horns
     const hornGeometry = new THREE.ConeGeometry(2, 8, 8);
     const hornMaterial = new THREE.MeshStandardMaterial({ color: 0x888888 });
-    
+
     const leftHorn = new THREE.Mesh(hornGeometry, hornMaterial);
     leftHorn.position.set(-4, 25, -8);
     leftHorn.rotation.x = -Math.PI / 4;
     playerGroup.add(leftHorn);
-    
+
     const rightHorn = new THREE.Mesh(hornGeometry, hornMaterial);
     rightHorn.position.set(4, 25, -8);
     rightHorn.rotation.x = -Math.PI / 4;
     playerGroup.add(rightHorn);
-    
+
     // Legs
     const legGeometry = new THREE.BoxGeometry(3, 10, 3);
     const legMaterial = new THREE.MeshStandardMaterial({ color: 0xCCCCCC });
-    
+
     const positions = [
       [-5, 5, -8], // Front left
       [5, 5, -8],  // Front right
       [-5, 5, 8],  // Back left
       [5, 5, 8]    // Back right
     ];
-    
+
     positions.forEach(pos => {
       const leg = new THREE.Mesh(legGeometry, legMaterial);
       leg.position.set(...pos);
       playerGroup.add(leg);
     });
-    
+
     // Player nametag - use sprite instead of text
     const canvas = document.createElement('canvas');
     const context = canvas.getContext('2d');
@@ -707,10 +697,10 @@ export class GameRenderer {
       const sprite = new THREE.Sprite(spriteMaterial);
       sprite.position.set(0, 1.2, 0);
       sprite.scale.set(1, 0.25, 1);
-      mesh.add(sprite);
+      playerGroup.add(sprite);
     }
 
-    return mesh;
+    return playerGroup;
   }
 
   updateCamera(playerId: string, state: GameState) {
@@ -727,21 +717,21 @@ export class GameRenderer {
       // Position camera behind and above the player for third person view
       const targetX = player.x - this.groundSize/2;
       const targetZ = player.y - this.groundSize/2;
-      
+
       // Calculate camera position based on player rotation/direction
       const playerRotation = player.rotation || 0;
       const distance = 50; // Distance behind player
       const height = 40;   // Height above player
-      
+
       // Calculate camera position
       const cameraX = targetX - Math.sin(playerRotation) * distance;
       const cameraZ = targetZ - Math.cos(playerRotation) * distance;
-      
+
       // Smoothly move camera
       this.camera.position.x = cameraX;
       this.camera.position.z = cameraZ;
       this.camera.position.y = height;
-      
+
       // Look at player
       this.camera.lookAt(targetX, 15, targetZ);
     }
@@ -749,7 +739,7 @@ export class GameRenderer {
 
   render(state: GameState) {
     try {
-      if (!this.scene || !this.camera || !this.renderer) return;
+      if (!this.renderer && !this.fallbackCtx) return;
 
       // Clear existing models
       this.models.forEach((model, id) => {
@@ -797,9 +787,37 @@ export class GameRenderer {
       }
 
       // Render the scene
-      this.renderer.render(this.scene, this.camera);
+      if (this.renderer) {
+        try {
+          this.renderer.render(this.scene, this.camera);
+        } catch (e) {
+          console.error("Error rendering scene:", e);
+        }
+      }
+      // Fallback already renders a static message, no need to update
+
     } catch (error) {
       console.error("Error rendering scene:", error);
+    }
+  }
+
+
+  // Create a fallback renderer when WebGL is not available
+  private createFallbackRenderer(canvas: HTMLCanvasElement) {
+    // Create a simple 2D canvas fallback
+    const ctx = canvas.getContext('2d');
+    if (ctx) {
+      ctx.fillStyle = '#87ceeb';
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      ctx.font = '20px Arial';
+      ctx.fillStyle = 'white';
+      ctx.textAlign = 'center';
+      ctx.fillText('WebGL not supported in this environment', canvas.width / 2, canvas.height / 2);
+      ctx.fillText('Try opening this application in a new tab', canvas.width / 2, canvas.height / 2 + 30);
+      ctx.fillText('or using a different browser', canvas.width / 2, canvas.height / 2 + 60);
+
+      // Store the context for future renders
+      this.fallbackCtx = ctx;
     }
   }
 
@@ -815,6 +833,6 @@ export class GameRenderer {
         }
       }
     });
-    this.renderer.dispose();
+    this.renderer?.dispose();
   }
 }
