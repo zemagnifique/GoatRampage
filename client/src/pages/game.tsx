@@ -23,9 +23,26 @@ export default function Game() {
     canvas.width = window.innerWidth;
     canvas.height = window.innerHeight;
 
-    // Initialize game engine
-    const engine = new GameEngine(canvas);
-    engineRef.current = engine;
+    // Initialize game engine with error handling
+    try {
+      const engine = new GameEngine(canvas);
+      engineRef.current = engine;
+    } catch (error) {
+      console.error("Failed to initialize game engine:", error);
+      // Draw error message on canvas directly
+      const ctx = canvas.getContext('2d');
+      if (ctx) {
+        ctx.fillStyle = '#87ceeb';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        ctx.font = '20px Arial';
+        ctx.fillStyle = 'white';
+        ctx.textAlign = 'center';
+        ctx.fillText('Cannot initialize 3D game engine', canvas.width / 2, canvas.height / 2);
+        ctx.fillText('WebGL not supported in this environment', canvas.width / 2, canvas.height / 2 + 30);
+        ctx.fillText('Please try a different browser or device', canvas.width / 2, canvas.height / 2 + 60);
+      }
+      return;
+    }
 
     // Use window event for player stats
     const handlePlayerStats = (event: CustomEvent) => {

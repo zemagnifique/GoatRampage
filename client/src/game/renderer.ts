@@ -23,8 +23,26 @@ export class GameRenderer {
     this.camera.position.set(0, 50, 100);
     this.camera.lookAt(0, 0, 0);
 
-    // Initialize renderer
-    this.renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
+    // Initialize renderer with fallback
+    try {
+      this.renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
+      console.log("Using WebGL renderer");
+    } catch (e) {
+      console.warn("WebGL not available, falling back to CanvasRenderer", e);
+      // Create a simple 2D canvas as fallback
+      const ctx = canvas.getContext('2d');
+      if (ctx) {
+        ctx.fillStyle = '#87ceeb';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        ctx.font = '20px Arial';
+        ctx.fillStyle = 'white';
+        ctx.textAlign = 'center';
+        ctx.fillText('WebGL not supported in this environment', canvas.width / 2, canvas.height / 2);
+        ctx.fillText('Please try a different browser or device', canvas.width / 2, canvas.height / 2 + 30);
+      }
+      throw new Error("WebGL not supported in this environment");
+    }
+    
     this.renderer.setSize(window.innerWidth, window.innerHeight);
     this.renderer.shadowMap.enabled = true;
     this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;

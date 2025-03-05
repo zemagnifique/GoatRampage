@@ -1,0 +1,40 @@
+THREE.WebGLRenderer: A WebGL context could not be created. Reason:  Could not create a WebGL context, VENDOR = 0xffff, DEVICE = 0xffff, GL_VENDOR = Google Inc. (Google), GL_RENDERER = ANGLE (Google, Vulkan 1.3.0 (SwiftShader Device (LLVM 10.0.0) (0x0000C0DE)), SwiftShader driver-5.0.0), GL_VERSION = 5.0.0, Sandboxed = yes, Optimus = no, AMD switchable = no, Reset notification strategy = 0x8252, ErrorMessage = BindToCurrentSequence failed: .
+onContextCreationError @ three.js?v=5a8e048a:36520Understand this errorAI
+three.js?v=5a8e048a:36520 THREE.WebGLRenderer: A WebGL context could not be created. Reason:  Failed to create a WebGL2 context.
+onContextCreationError @ three.js?v=5a8e048a:36520Understand this errorAI
+three.js?v=5a8e048a:36520 THREE.WebGLRenderer: A WebGL context could not be created. Reason:  Could not create a WebGL context, VENDOR = 0xffff, DEVICE = 0xffff, GL_VENDOR = Google Inc. (Google), GL_RENDERER = ANGLE (Google, Vulkan 1.3.0 (SwiftShader Device (LLVM 10.0.0) (0x0000C0DE)), SwiftShader driver-5.0.0), GL_VERSION = 5.0.0, Sandboxed = yes, Optimus = no, AMD switchable = no, Reset notification strategy = 0x8252, ErrorMessage = BindToCurrentSequence failed: .
+onContextCreationError @ three.js?v=5a8e048a:36520Understand this errorAI
+three.js?v=5a8e048a:36520 THREE.WebGLRenderer: A WebGL context could not be created. Reason:  Failed to create a WebGL2 context.
+onContextCreationError @ three.js?v=5a8e048a:36520Understand this errorAI
+three.js?v=5a8e048a:36280 THREE.WebGLRenderer: Error creating WebGL context.
+WebGLRenderer @ three.js?v=5a8e048a:36280Understand this errorAI
+renderer.ts:31 WebGL not available, falling back to CanvasRenderer Error: Error creating WebGL context.
+    at new WebGLRenderer (three.js?v=5a8e048a:36275:19)
+    at new GameRenderer (renderer.ts:28:23)
+    at new GameEngine (engine.ts:19:21)
+    at game.tsx:28:22
+    at commitHookEffectListMount (chunk-RPCDYKBN.js?v=5a8e048a:16915:34)
+    at commitPassiveMountOnFiber (chunk-RPCDYKBN.js?v=5a8e048a:18156:19)
+    at commitPassiveMountEffects_complete (chunk-RPCDYKBN.js?v=5a8e048a:18129:17)
+    at commitPassiveMountEffects_begin (chunk-RPCDYKBN.js?v=5a8e048a:18119:15)
+    at commitPassiveMountEffects (chunk-RPCDYKBN.js?v=5a8e048a:18109:11)
+    at flushPassiveEffectsImpl (chunk-RPCDYKBN.js?v=5a8e048a:19490:11)
+GameRenderer @ renderer.ts:31Understand this warningAI
+game.tsx:31 Failed to initialize game engine: Error: WebGL not supported in this environment
+    at new GameRenderer (renderer.ts:43:13)
+    at new GameEngine (engine.ts:19:21)
+    at game.tsx:28:22
+    at commitHookEffectListMount (chunk-RPCDYKBN.js?v=5a8e048a:16915:34)
+    at commitPassiveMountOnFiber (chunk-RPCDYKBN.js?v=5a8e048a:18156:19)
+    at commitPassiveMountEffects_complete (chunk-RPCDYKBN.js?v=5a8e048a:18129:17)
+    at commitPassiveMountEffects_begin (chunk-RPCDYKBN.js?v=5a8e048a:18119:15)
+    at commitPassiveMountEffects (chunk-RPCDYKBN.js?v=5a8e048a:18109:11)
+    at flushPassiveEffectsImpl (chunk-RPCDYKBN.js?v=5a8e048a:19490:11)
+    at flushPassiveEffects (chunk-RPCDYKBN.js?v=5a8e048a:19447:22)
+(anonymous) @ game.tsx:31Understand this errorAI
+game:1 Unchecked runtime.lastError: A listener indicated an asynchronous response by returning true, but the message channel closed before a response was receivedUnderstand this errorAI
+game:1 Unchecked runtime.lastError: A listener indicated an asynchronous response by returning true, but the message channel closed before a response was receivedUnderstand this errorAI
+game:1 Unchecked runtime.lastError: A listener indicated an asynchronous response by returning true, but the message channel closed before a response was receivedUnderstand this errorAI
+game:1 Unchecked runtime.lastError: A listener indicated an asynchronous response by returning true, but the message channel closed before a response was receivedUnderstand this errorAI
+game:1 Uncaught (in promise) Error: A listener indicated an asynchronous response by returning true, but the message channel closed before a response was receivedUnderstand this errorAI
+content.js:1 
