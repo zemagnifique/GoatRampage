@@ -1,74 +1,90 @@
-import { type GameState } from "@shared/schema";
+import { type GameState, type PlayerState, type EnvironmentObject } from "@shared/schema";
 
 export class GameRenderer {
   private ctx: CanvasRenderingContext2D;
   private goatSprites: HTMLImageElement[];
   private environmentSprites: HTMLImageElement[];
+  private spritesLoaded: boolean = false;
 
   constructor(private canvas: HTMLCanvasElement) {
     this.ctx = canvas.getContext('2d')!;
-    this.goatSprites = [
-      "photo-1532633378163-24c2c0da3c99",
-      "photo-1524024973431-2ad916746881",
-      "photo-1521388316693-6a0e8d6f2327",
-      "photo-1513494620969-1e35db419529",
-      "photo-1542481018-230d347a0af9",
-      "photo-1499115421298-dc3b4fe66c58"
-    ].map(this.loadSprite);
 
-    this.environmentSprites = [
-      "photo-1699818709789-4377d01b61f6",
-      "photo-1723155632440-abd5b668173a",
-      "photo-1721152531946-040f73b312e2"
-    ].map(this.loadSprite);
+    // Load sprites
+    this.goatSprites = [];
+    this.environmentSprites = [];
+
+    // Load goat sprites
+    Promise.all([
+      this.loadSprite("goat1.png"),
+      this.loadSprite("goat2.png"),
+      // Add more sprite loading as needed
+    ]).then(sprites => {
+      this.goatSprites = sprites;
+      this.spritesLoaded = true;
+    });
   }
 
-  private loadSprite(url: string): HTMLImageElement {
-    const img = new Image();
-    img.src = `https://images.unsplash.com/${url}`;
-    return img;
+  private loadSprite(path: string): Promise<HTMLImageElement> {
+    return new Promise((resolve, reject) => {
+      const img = new Image();
+      img.onload = () => resolve(img);
+      img.onerror = reject;
+      img.src = path;
+    });
   }
 
   render(state: GameState) {
     this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
-    
+
     // Draw environment
     state.environment.forEach(obj => {
       this.drawEnvironmentObject(obj);
     });
 
     // Draw players
-    state.players.forEach(player => {
+    Array.from(state.players.values()).forEach(player => {
       this.drawPlayer(player);
     });
 
-    // Draw UI
+    // Draw UI elements
     this.drawUI(state);
   }
 
-  private drawPlayer(player: any) {
-    const sprite = this.goatSprites[0]; // Use appropriate sprite based on player state
-    this.ctx.drawImage(sprite, player.x, player.y, 50, 50);
-    
+  private drawPlayer(player: PlayerState) {
+    // Draw player circle as fallback if sprites aren't loaded
+    this.ctx.beginPath();
+    this.ctx.arc(player.x, player.y, 25, 0, Math.PI * 2);
+    this.ctx.fillStyle = player.isCharging ? 'red' : 'white';
+    this.ctx.fill();
+
     // Draw health bar
+    const healthWidth = 50;
+    const healthHeight = 5;
     this.ctx.fillStyle = `rgb(${255 - player.health * 2.55}, ${player.health * 2.55}, 0)`;
-    this.ctx.fillRect(player.x, player.y - 10, player.health / 2, 5);
-    
+    this.ctx.fillRect(
+      player.x - healthWidth / 2,
+      player.y - 40,
+      (healthWidth * player.health) / 100,
+      healthHeight
+    );
+
     // Draw player tag
     this.ctx.fillStyle = 'white';
-    this.ctx.font = '12px Arial';
-    this.ctx.fillText(player.tag, player.x, player.y - 15);
+    this.ctx.font = '14px Arial';
+    this.ctx.textAlign = 'center';
+    this.ctx.fillText(player.tag, player.x, player.y - 45);
   }
 
-  private drawEnvironmentObject(obj: any) {
-    const sprite = this.environmentSprites[0]; // Use appropriate sprite based on object type
-    this.ctx.drawImage(sprite, obj.x, obj.y, obj.width, obj.height);
+  private drawEnvironmentObject(obj: EnvironmentObject) {
+    this.ctx.fillStyle = 'gray';
+    this.ctx.fillRect(obj.x, obj.y, obj.width, obj.height);
   }
 
   private drawUI(state: GameState) {
-    // Draw score and other UI elements
+    // Draw score
     this.ctx.fillStyle = 'white';
     this.ctx.font = '20px Arial';
+    this.ctx.textAlign = 'left';
     this.ctx.fillText(`Score: ${Array.from(state.players.values())[0]?.score || 0}`, 10, 30);
   }
 }

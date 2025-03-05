@@ -1,0 +1,54 @@
+Uncaught InvalidStateError: Failed to execute 'send' on 'WebSocket': Still in CONNECTING state.
+    at GameEngine.join (engine.ts:27:17)
+    at game.tsx:27:12
+    at commitHookEffectListMount (chunk-WERSD76P.js?v=a0b86e23:16915:34)
+    at commitPassiveMountOnFiber (chunk-WERSD76P.js?v=a0b86e23:18156:19)
+    at commitPassiveMountEffects_complete (chunk-WERSD76P.js?v=a0b86e23:18129:17)
+    at commitPassiveMountEffects_begin (chunk-WERSD76P.js?v=a0b86e23:18119:15)
+    at commitPassiveMountEffects (chunk-WERSD76P.js?v=a0b86e23:18109:11)
+    at flushPassiveEffectsImpl (chunk-WERSD76P.js?v=a0b86e23:19490:11)
+    at flushPassiveEffects (chunk-WERSD76P.js?v=a0b86e23:19447:22)
+    at performSyncWorkOnRoot (chunk-WERSD76P.js?v=a0b86e23:18868:11)Understand this errorAI
+chunk-WERSD76P.js?v=a0b86e23:14032 The above error occurred in the <Game> component:
+
+    at Game (https://74e23b14-7631-4cb4-93b4-e5a3b9d81be7-00-2x9skgyra46xs.spock.replit.dev/src/pages/game.tsx:23:21)
+    at Route (https://74e23b14-7631-4cb4-93b4-e5a3b9d81be7-00-2x9skgyra46xs.spock.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/wouter.js?v=8858e563:323:16)
+    at Switch (https://74e23b14-7631-4cb4-93b4-e5a3b9d81be7-00-2x9skgyra46xs.spock.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/wouter.js?v=8858e563:379:17)
+    at Router
+    at QueryClientProvider (https://74e23b14-7631-4cb4-93b4-e5a3b9d81be7-00-2x9skgyra46xs.spock.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/@tanstack_react-query.js?v=1b47d0c9:2805:3)
+    at App
+
+Consider adding an error boundary to your tree to customize error handling behavior.
+Visit https://reactjs.org/link/error-boundaries to learn more about error boundaries.
+logCapturedError @ chunk-WERSD76P.js?v=a0b86e23:14032Understand this errorAI
+chunk-WERSD76P.js?v=a0b86e23:9129 Uncaught InvalidStateError: Failed to execute 'send' on 'WebSocket': Still in CONNECTING state.
+    at GameEngine.join (engine.ts:27:17)
+    at game.tsx:27:12
+    at commitHookEffectListMount (chunk-WERSD76P.js?v=a0b86e23:16915:34)
+    at commitPassiveMountOnFiber (chunk-WERSD76P.js?v=a0b86e23:18156:19)
+    at commitPassiveMountEffects_complete (chunk-WERSD76P.js?v=a0b86e23:18129:17)
+    at commitPassiveMountEffects_begin (chunk-WERSD76P.js?v=a0b86e23:18119:15)
+    at commitPassiveMountEffects (chunk-WERSD76P.js?v=a0b86e23:18109:11)
+    at flushPassiveEffectsImpl (chunk-WERSD76P.js?v=a0b86e23:19490:11)
+    at flushPassiveEffects (chunk-WERSD76P.js?v=a0b86e23:19447:22)
+    at performSyncWorkOnRoot (chunk-WERSD76P.js?v=a0b86e23:18868:11)Understand this errorAI
+client:536 WebSocket connection to 'wss://74e23b14-7631-4cb4-93b4-e5a3b9d81be7-00-2x9skgyra46xs.spock.replit.dev/?token=l6RFVYwG0_NW' failed: 
+setupWebSocket @ client:536Understand this errorAI
+client:536 Uncaught (in promise) SyntaxError: Failed to construct 'WebSocket': The URL 'wss://localhost:undefined/?token=l6RFVYwG0_NW' is invalid.
+    at setupWebSocket (client:536:19)
+    at fallback (client:509:16)
+    at WebSocket.<anonymous> (client:555:7)Understand this errorAI
+741physics.ts:14 Uncaught TypeError: state.players.forEach is not a function
+    at PhysicsEngine.updatePlayerMovement (physics.ts:14:19)
+    at PhysicsEngine.update (physics.ts:9:10)
+    at GameEngine.update (engine.ts:43:18)
+    at GameEngine.socket.onmessage (engine.ts:21:12)Understand this errorAI
+767physics.ts:14 Uncaught TypeError: state.players.forEach is not a function
+    at PhysicsEngine.updatePlayerMovement (physics.ts:14:19)
+    at PhysicsEngine.update (physics.ts:9:10)
+    at GameEngine.update (engine.ts:43:18)
+    at GameEngine.socket.onmessage (engine.ts:21:12)
+updatePlayerMovement @ physics.ts:14
+update @ physics.ts:9
+update @ engine.ts:43
+GameEngine.socket.onmessage @ engine.ts:21Understand this errorAI
